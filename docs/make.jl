@@ -2,7 +2,7 @@ using Documenter
 using Sequoia
 
 makedocs(
-    sitename = "https://luciannita.github.io/Sequoia.jl",
+    sitename = "Sequoia.jl",
     format = Documenter.HTML(prettyurls = false),
     pages = [
         "Introduction" => "index.md",
