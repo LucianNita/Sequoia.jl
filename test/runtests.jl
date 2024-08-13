@@ -1,1 +1,1 @@
-include("text/test_basic.jl");
+include("test_basic.jl");
