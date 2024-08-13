@@ -2,3 +2,7 @@ name = "Sequoia"
 uuid = "b9aab87a-2693-48ad-a6a2-0c026f312780"
 authors = ["Lucian Nita <lucian.nita@yahoo.com>"]
 version = "0.1.0"
+
+[deps]
+Optimization = "7f7a1694-90dd-40f0-9382-eb1efda571ba"
+OptimizationOptimJL = "36348300-93cb-4f02-beb5-3c3902f8871e"
