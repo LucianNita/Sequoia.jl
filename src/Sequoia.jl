@@ -54,11 +54,11 @@ mutable struct SEQUOIA
     
     SEQUOIA(nvar::Integer, obj::Function; sense="FEAS+MIN", cons::Vector{Function}=Vector{Function}(undef, 0), eqcon=Vector{Int}(undef, 0), ineqcon=Vector{Int}(undef, 0), x0::Vector{Float64}=zeros(nvar), t=obj(x0) )= new(nvar,obj,sense,cons,eqcon,ineqcon,x0,t)
     
-    SEQUOIA(nvar::Integer, obj::Function, sense::String, cons::Function, eqcon=Vector{Int}, ineqcon=Vector{Int}; x0::Vector{Float64}=zeros(nvar), t=obj(x0) )= new(nvar,obj,sense,[cons],eqcon,ineqcon,x0,t)
+    SEQUOIA(nvar::Integer, obj::Function, sense::String, cons::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}; x0::Vector{Float64}=zeros(nvar), t=obj(x0) )= new(nvar,obj,sense,[cons],eqcon,ineqcon,x0,t)
     
-    SEQUOIA(obj::Function, sense::String, cons::Function, eqcon=Vector{Int}, ineqcon=Vector{Int}, x0::Vector{Float64}; t=obj(x0) )= new(length(x0),obj,sense,[cons],eqcon,ineqcon,x0,t)
+    SEQUOIA(obj::Function, sense::String, cons::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}, x0::Vector{Float64}; t=obj(x0) )= new(length(x0),obj,sense,[cons],eqcon,ineqcon,x0,t)
     
-    SEQUOIA(obj::Function, sense::String, cons::Function, eqcon=Vector{Int}, ineqcon=Vector{Int}, x0::Vector{Float64}, t::Float64 )= new(length(x0),obj,sense,[cons],eqcon,ineqcon,x0,t)
+    SEQUOIA(obj::Function, sense::String, cons::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}, x0::Vector{Float64}, t::Float64 )= new(length(x0),obj,sense,[cons],eqcon,ineqcon,x0,t)
 end
 
 """
