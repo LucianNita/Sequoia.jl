@@ -12,4 +12,4 @@
 
 "# Sequoia.jl" 
 
-Note only works on Linux. If windows or Mac, create VM. Follow instructions from <link>
+Note only works on Linux. If windows or Mac, create VM. Follow instructions from link
