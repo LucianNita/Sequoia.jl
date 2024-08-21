@@ -3,9 +3,10 @@ module Sequoia
 import LinearAlgebra
 import Optim
 
-export SEQUOIA
+export SEQUOIA, Cutest2Sequoia
 
-include("structs.jl")
+#include("structs.jl")
+include("cutest_interface.jl")
 
 """
 SEQUOIA is the main data strucutre of the package and stores the problem definition for SEQUOIA problems.
