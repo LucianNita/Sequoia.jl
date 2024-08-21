@@ -3,7 +3,7 @@ using Sequoia
 
 makedocs(
     sitename = "Sequoia.jl",
-    format = Documenter.HTML(prettyurls = false),
+    format = Documenter.HTML(prettyurls = false, assets = ["assets/favicon.ico"]),
     pages = [
         "Introduction" => "index.md",
         "API" => "api.md"
