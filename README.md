@@ -11,3 +11,5 @@
 [![CI](https://github.com/LucianNita/Sequoia.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/LucianNita/Sequoia.jl/actions/workflows/CI.yml)
 
 "# Sequoia.jl" 
+
+Note only works on Linux. If windows or Mac, create VM. Follow instructions from <link>
