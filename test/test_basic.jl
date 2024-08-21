@@ -15,7 +15,7 @@
     @test seq_obj.nvar == nvar
     @test seq_obj.objective == objective
     @test seq_obj.objSense == sense
-    @test seq_obj.constraints == constraints
+    @test seq_obj.constraints[1] == constraints
     @test seq_obj.eqcon == eqcon
     @test seq_obj.ineqcon == ineqcon
     @test seq_obj.x0 == x0
@@ -49,7 +49,7 @@
 
     seq_obj_constraints = SEQUOIA(nvar, cons=constraints_2, eqcon=eqcon_2, ineqcon=ineqcon_2)
 
-    @test seq_obj_constraints.constraints == constraints_2
+    @test seq_obj_constraints.constraints[1] == constraints_2
     @test seq_obj_constraints.eqcon == eqcon_2
     @test seq_obj_constraints.ineqcon == ineqcon_2
 

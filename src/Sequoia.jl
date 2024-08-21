@@ -3,6 +3,8 @@ module Sequoia
 import LinearAlgebra
 import Optim
 
+export SEQUOIA
+
 include("structs.jl")
 
 """
@@ -50,9 +52,9 @@ mutable struct SEQUOIA
 
     Different constructor variants are provided to accommodate various initial conditions.
     """
-    SEQUOIA(nvar::Integer; obj::Function=x->0.0, sense="FEAS+MIN", cons::Vector{Function}=Vector{Function}(undef, 0), eqcon=Vector{Int}(undef, 0), ineqcon=Vector{Int}(undef, 0), x0::Vector{Float64}=zeros(nvar), t=obj(x0) )= new(nvar,obj,sense,cons,eqcon,ineqcon,x0,t)
+    SEQUOIA(nvar::Integer; obj::Function=x->0.0, sense="FEAS+MIN", cons::Function=x->0.0, eqcon=Vector{Int}(undef, 0), ineqcon=Vector{Int}(undef, 0), x0::Vector{Float64}=zeros(nvar), t=obj(x0) )= new(nvar,obj,sense,[cons],eqcon,ineqcon,x0,t)
     
-    SEQUOIA(nvar::Integer, obj::Function; sense="FEAS+MIN", cons::Vector{Function}=Vector{Function}(undef, 0), eqcon=Vector{Int}(undef, 0), ineqcon=Vector{Int}(undef, 0), x0::Vector{Float64}=zeros(nvar), t=obj(x0) )= new(nvar,obj,sense,cons,eqcon,ineqcon,x0,t)
+    SEQUOIA(nvar::Integer, obj::Function; sense="FEAS+MIN", cons::Function=x->0.0, eqcon=Vector{Int}(undef, 0), ineqcon=Vector{Int}(undef, 0), x0::Vector{Float64}=zeros(nvar), t=obj(x0) )= new(nvar,obj,sense,[cons],eqcon,ineqcon,x0,t)
     
     SEQUOIA(nvar::Integer, obj::Function, sense::String, cons::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}; x0::Vector{Float64}=zeros(nvar), t=obj(x0) )= new(nvar,obj,sense,[cons],eqcon,ineqcon,x0,t)
     
