@@ -1,11 +1,12 @@
 module Sequoia
 
-import LinearAlgebra
-import Optim
+using LinearAlgebra
+using Optim
 
 export SEQUOIA, Cutest2Sequoia
 
-#include("structs.jl")
+include("structs.jl")
+include("constraints.jl")
 include("cutest_interface.jl")
 
 """
@@ -33,10 +34,10 @@ mutable struct SEQUOIA
     x0::Vector{Float64}  # Initial guess for the variables
     t::Float64   # "Penalty parameter used in the SEQUOIA method
 
-    #settings::SEQUOIA_Settings #General problem settings
-    #solutionHist::Vector{Optim.MultivariateOptimizationResults} #Vector of past solutions in "Optim.jl" format
-    #History::SEQUOIA_Hist  #This stores past data about past parameters and guesses
-    #exitCode::Integer      #Did the algorithm terminat? 0:No; >0:Yes. -1: optimize not called yet; 1:optimality tolerance reached successfully solved; 2:Infeasibility catch; 3:Maximum number of iterations reached; 4:Unbounded catch; 
+    settings::SEQUOIA_Settings #General problem settings
+    solutionHist::Vector{Optim.MultivariateOptimizationResults} #Vector of past solutions in "Optim.jl" format
+    History::SEQUOIA_Hist  #This stores past data about past parameters and guesses
+    exitCode::Integer      #Did the algorithm terminat? 0:No; >0:Yes. -1: optimize not called yet; 1:optimality tolerance reached successfully solved; 2:Infeasibility catch; 3:Maximum number of iterations reached; 4:Unbounded catch; 
     
     """
     Constructs a new SEQUOIA object.
@@ -53,15 +54,19 @@ mutable struct SEQUOIA
 
     Different constructor variants are provided to accommodate various initial conditions.
     """
-    SEQUOIA(nvar::Integer; obj::Function=x->0.0, sense="FEAS+MIN", cons::Function=x->0.0, eqcon=Vector{Int}(undef, 0), ineqcon=Vector{Int}(undef, 0), x0::Vector{Float64}=zeros(nvar), t=obj(x0) )= new(nvar,obj,sense,[cons],eqcon,ineqcon,x0,t)
+    SEQUOIA(nvar::Integer; obj::Function=x->0.0, sense="FEAS+MIN", cons::Function=x->[0.0], eqcon=Vector{Int}(undef, 0), ineqcon=Vector{Int}(undef, 0), x0::Vector{Float64}=zeros(nvar), t=obj(x0), settings=SEQUOIA_Settings() ,solHist=Vector{Optim.MultivariateOptimizationResults}(undef,0), hist=SEQUOIA_Hist(x0,t,resid(cons,x0)), exitStatus=-1 )= new(nvar,obj,sense,[cons],eqcon,ineqcon,x0,t,settings,solHist,hist,exitStatus)
     
-    SEQUOIA(nvar::Integer, obj::Function; sense="FEAS+MIN", cons::Function=x->0.0, eqcon=Vector{Int}(undef, 0), ineqcon=Vector{Int}(undef, 0), x0::Vector{Float64}=zeros(nvar), t=obj(x0) )= new(nvar,obj,sense,[cons],eqcon,ineqcon,x0,t)
+    SEQUOIA(nvar::Integer, obj::Function; sense="FEAS+MIN", cons::Function=x->[0.0], eqcon=Vector{Int}(undef, 0), ineqcon=Vector{Int}(undef, 0), x0::Vector{Float64}=zeros(nvar), t=obj(x0), settings=SEQUOIA_Settings() ,solHist=Vector{Optim.MultivariateOptimizationResults}(undef,0), hist=SEQUOIA_Hist(x0,t,resid(cons,x0)), exitStatus=-1 )= new(nvar,obj,sense,[cons],eqcon,ineqcon,x0,t,settings,solHist,hist,exitStatus)
     
-    SEQUOIA(nvar::Integer, obj::Function, sense::String, cons::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}; x0::Vector{Float64}=zeros(nvar), t=obj(x0) )= new(nvar,obj,sense,[cons],eqcon,ineqcon,x0,t)
+    SEQUOIA(nvar::Integer, obj::Function, sense::String, cons::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}; x0::Vector{Float64}=zeros(nvar), t=obj(x0), settings=SEQUOIA_Settings() ,solHist=Vector{Optim.MultivariateOptimizationResults}(undef,0), hist=SEQUOIA_Hist(x0,t,resid(cons,x0)), exitStatus=-1 )= new(nvar,obj,sense,[cons],eqcon,ineqcon,x0,t,settings,solHist,hist,exitStatus)
     
-    SEQUOIA(obj::Function, sense::String, cons::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}, x0::Vector{Float64}; t=obj(x0) )= new(length(x0),obj,sense,[cons],eqcon,ineqcon,x0,t)
+    SEQUOIA(obj::Function, sense::String, cons::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}, x0::Vector{Float64}; t=obj(x0), settings=SEQUOIA_Settings() ,solHist=Vector{Optim.MultivariateOptimizationResults}(undef,0), hist=SEQUOIA_Hist(x0,t,resid(cons,x0)), exitStatus=-1 )= new(length(x0),obj,sense,[cons],eqcon,ineqcon,x0,t,settings,solHist,hist,exitStatus)
     
-    SEQUOIA(obj::Function, sense::String, cons::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}, x0::Vector{Float64}, t::Float64 )= new(length(x0),obj,sense,[cons],eqcon,ineqcon,x0,t)
+    SEQUOIA(obj::Function, sense::String, cons::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}, x0::Vector{Float64}, t::Float64, settings=SEQUOIA_Settings() ,solHist=Vector{Optim.MultivariateOptimizationResults}(undef,0), hist=SEQUOIA_Hist(x0,t,resid(cons,x0)), exitStatus=-1 )= new(length(x0),obj,sense,[cons],eqcon,ineqcon,x0,t,settings,solHist,hist,exitStatus)
+
+    SEQUOIA(obj::Function, sense::String, cons::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}, x0::Vector{Float64}, t::Float64, settings::SEQUOIA_Settings; solHist=Vector{Optim.MultivariateOptimizationResults}(undef,0), hist=SEQUOIA_Hist(x0,t,resid(cons,x0)), exitStatus=-1 )= new(length(x0),obj,sense,[cons],eqcon,ineqcon,x0,t,settings,solHist,hist,exitStatus)
+
+    SEQUOIA(obj::Function, sense::String, cons::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}, x0::Vector{Float64}, t::Float64, settings::SEQUOIA_Settings, hist::SEQUOIA_Hist; solHist=Vector{Optim.MultivariateOptimizationResults}(undef,0), exitStatus=-1 )= new(length(x0),obj,sense,[cons],eqcon,ineqcon,x0,t,settings,solHist,hist,exitStatus)
 end
 
 """
