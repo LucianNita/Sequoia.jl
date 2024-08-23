@@ -10,6 +10,7 @@ using NLPModels
         # Test if the function returns a SEQUOIA problem object
         sq_pb = Cutest2Sequoia(problem)
         @test isa(sq_pb, SEQUOIA)  # Check that the return type is SEQUOIA
+        finalize(sq_pb.cutest_handle);
 
         # Test if the number of variables in the SEQUOIA problem matches the CUTEst problem
         pb = CUTEstModel(problem)
@@ -44,6 +45,7 @@ using NLPModels
         # Test if the function returns a SEQUOIA problem object
         sq_pb = Cutest2Sequoia(minimal_problem)
         @test isa(sq_pb, SEQUOIA)  # Check that the return type is SEQUOIA
+        finalize(sq_pb.cutest_handle);
         pb = CUTEstModel(minimal_problem)
 
         # Test if the number of equality and inequality constraints are correct
