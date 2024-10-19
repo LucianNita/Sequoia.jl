@@ -116,56 +116,42 @@ mutable struct SEQUOIA_Settings
         # Initialize the struct if all validations pass
         return new(inner_solver, max_iter, max_time, resid_tolerance, cost_tolerance, cost_min, outer_method, feasibility, step_size)
     end
-end
 
-"""
+    """
     SEQUOIA_Settings(inner_solver::InnerSolver, outer_method::OuterMethod; max_iter=1000, max_time=Inf)
 
-Construct a `SEQUOIA_Settings` object with the specified `inner_solver` and `outer_method`, leaving other fields to their default values.
+    Construct a `SEQUOIA_Settings` object with the specified `inner_solver` and `outer_method`, leaving other fields to their default values.
 
-# Arguments
-- `inner_solver`: Algorithm for solving the unconstrained problem.
-- `outer_method`: Outer optimization method.
-- `max_iter`: Maximum number of iterations. Default is 1000.
-- `max_time`: Maximum computational time (seconds). Default is `Inf`.
-"""
+    # Arguments
+    - `inner_solver`: Algorithm for solving the unconstrained problem.
+    - `outer_method`: Outer optimization method.
+    - `max_iter`: Maximum number of iterations. Default is 1000.
+    - `max_time`: Maximum computational time (seconds). Default is `Inf`.
+    """
 
-# Simplified constructor with just the most important fields
-function SEQUOIA_Settings(inner_solver::InnerSolver, outer_method::OuterMethod; max_iter::Int=1000, max_time::Real=Inf)
-    SEQUOIA_Settings(inner_solver=inner_solver, max_iter=max_iter, max_time=max_time, outer_method=outer_method)
+    # Simplified constructor with just the most important fields
+    function SEQUOIA_Settings(inner_solver::InnerSolver, outer_method::OuterMethod; max_iter::Int=1000, max_time::Real=Inf)
+        SEQUOIA_Settings(inner_solver=inner_solver, max_iter=max_iter, max_time=max_time, outer_method=outer_method)
+    end
+
+    """
+        SEQUOIA_Settings(inner_solver::InnerSolver; max_iter=1000, max_time=Inf)
+
+    Construct a `SEQUOIA_Settings` object with the specified `inner_solver` and leave the outer method as the default `SEQUOIA()`.
+
+    # Arguments
+    - `inner_solver`: Algorithm for solving the unconstrained problem.
+    - `max_iter`: Maximum number of iterations. Default is 1000.
+    - `max_time`: Maximum computational time (seconds). Default is `Inf`.
+    """
+
+    # Constructor with only inner_solver and default method
+    function SEQUOIA_Settings(inner_solver::InnerSolver; max_iter::Int=1000, max_time::Real=Inf)
+        SEQUOIA_Settings(inner_solver=inner_solver, max_iter=max_iter, max_time=max_time, outer_method=SEQUOIA())
+    end
 end
 
-"""
-    SEQUOIA_Settings(inner_solver::InnerSolver; max_iter=1000, max_time=Inf)
 
-Construct a `SEQUOIA_Settings` object with the specified `inner_solver` and leave the outer method as the default `SEQUOIA()`.
-
-# Arguments
-- `inner_solver`: Algorithm for solving the unconstrained problem.
-- `max_iter`: Maximum number of iterations. Default is 1000.
-- `max_time`: Maximum computational time (seconds). Default is `Inf`.
-"""
-
-# Constructor with only inner_solver and default method
-function SEQUOIA_Settings(inner_solver::InnerSolver; max_iter::Int=1000, max_time::Real=Inf)
-    SEQUOIA_Settings(inner_solver=inner_solver, max_iter=max_iter, max_time=max_time, outer_method=SEQUOIA())
-end
-
-"""
-    SEQUOIA_Settings(; max_iter=1000, max_time=Inf, resid_tolerance=1e-6)
-
-Construct a `SEQUOIA_Settings` object for a feasibility problem, leaving other fields to default values. This is intended for cases where only feasibility needs to be ensured, without objective function optimization.
-
-# Arguments
-- `max_iter`: Maximum number of iterations. Default is 1000.
-- `max_time`: Maximum allowed computational time (seconds). Default is `Inf`.
-- `resid_tolerance`: Residual tolerance for constraint satisfaction. Default is `1e-6`.
-"""
-
-# Constructor for feasibility problem only (no objective function)
-function SEQUOIA_Settings(; max_iter::Int=1000, max_time::Real=Inf, resid_tolerance::Real=1e-6)
-    SEQUOIA_Settings(inner_solver=LBFGS(), max_iter=max_iter, max_time=max_time, resid_tolerance=resid_tolerance, feasibility=true)
-end
 
 
 # Validation for inner_solver
