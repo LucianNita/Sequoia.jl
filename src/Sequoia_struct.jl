@@ -1,3 +1,4 @@
+using CUTEst
 export SEQUOIA_pb, ExitCode, 
        set_objective!, set_gradient!, set_constraints!, set_jacobian!, set_bounds!, 
        set_initial_guess!, set_solver_settings!, set_feasibility!, reset_solution_history!
@@ -75,7 +76,7 @@ mutable struct SEQUOIA_pb # Sequoia problem definition struct
     solution_history::SEQUOIA_Iterates                                          # Store solution history 
     exitCode::ExitCode                                                          # Termination status
 
-    cutest_nlp::Union{Nothing, CUTEstModel}                                     # CUTEst model handle - Optional 
+    cutest_nlp::Union{Nothing, CUTEst.CUTEstModel}                              # CUTEst model handle - Optional 
 
     """
     SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings)
