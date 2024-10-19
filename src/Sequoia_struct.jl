@@ -1,4 +1,4 @@
-export SEQUOIA, ExitCode, 
+export SEQUOIA_pb, ExitCode, 
        set_objective!, set_gradient!, set_constraints!, set_jacobian!, set_bounds!, 
        set_initial_guess!, set_solver_settings!, set_feasibility!, reset_solution_history!
 
@@ -12,9 +12,9 @@ export SEQUOIA, ExitCode,
 end
 
 """
-    SEQUOIA
+    SEQUOIA_pb
 
-The `SEQUOIA` struct defines an optimization problem to be solved using the SEQUOIA optimization method. It includes fields for the problem's dimension, objective function, constraints, initial guess, and solver settings.
+The `SEQUOIA_pb` struct defines an optimization problem to be solved using the SEQUOIA_pb optimization method. It includes fields for the problem's dimension, objective function, constraints, initial guess, and solver settings.
 
 # Fields
 
@@ -39,7 +39,7 @@ The `SEQUOIA` struct defines an optimization problem to be solved using the SEQU
 # Example
 
 ```julia
-using Sequoia
+using SEQUOIA_pb
 
 # Define the cost function
 objective_fn = x -> sum(x.^2)
@@ -47,12 +47,12 @@ objective_fn = x -> sum(x.^2)
 # Define solver settings
 settings = SEQUOIA_Settings(inner_solver=BFGS(), max_iter=1000, resid_tolerance=1e-6)
 
-# Initialize the SEQUOIA problem
-problem = SEQUOIA(nvar=2, objective=objective_fn, solver_settings=settings)
+# Initialize the SEQUOIA_pb problem
+problem = SEQUOIA_pb(nvar=2, objective=objective_fn, solver_settings=settings)
 
-# Output: SEQUOIA object with the defined problem
+# Output: SEQUOIA_pb object with the defined problem
 """
-mutable struct SEQUOIA # Sequoia problem definition struct 
+mutable struct SEQUOIA_pb # Sequoia problem definition struct 
     nvar::Int                                                                   # Problem dimension (number of variables)
 
     objective::Function                                                         # Cost function to be minimized or maximized
@@ -78,9 +78,9 @@ mutable struct SEQUOIA # Sequoia problem definition struct
     cutest_nlp::Union{Nothing, CUTEstModel}                                     # CUTEst model handle - Optional 
 
     """
-    SEQUOIA(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings)
+    SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings)
 
-    Construct a `SEQUOIA` problem with the required fields: `nvar` (number of variables), `objective` (cost function), and `solver_settings`.
+    Construct a `SEQUOIA_pb` problem with the required fields: `nvar` (number of variables), `objective` (cost function), and `solver_settings`.
 
     # Arguments
     - `nvar::Int`: The number of variables in the optimization problem.
@@ -93,9 +93,9 @@ mutable struct SEQUOIA # Sequoia problem definition struct
     objective_fn = x -> sum(x.^2)
     settings = SEQUOIA_Settings(inner_solver=BFGS(), max_iter=1000)
 
-    problem = SEQUOIA(2, objective_fn, settings)
+    problem = SEQUOIA_pb(2, objective_fn, settings)
     """
-    function SEQUOIA(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings)
+    function SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings)
         # Validate inputs
         validate_nvar(nvar)
         validate_objective(objective)
@@ -105,14 +105,14 @@ mutable struct SEQUOIA # Sequoia problem definition struct
         x0 = zeros(nvar)
         validate_x0(x0, nvar)
     
-        return SEQUOIA(nvar, objective, nothing, nothing, nothing, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
+        return SEQUOIA_pb(nvar, objective, nothing, nothing, nothing, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
     end
     
 
     """
-    SEQUOIA(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, constraints::Function)
+    SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, constraints::Function)
 
-    Construct a `SEQUOIA` problem with the objective function and constraints.
+    Construct a `SEQUOIA_pb` problem with the objective function and constraints.
 
     # Arguments
     - `nvar::Int`: The number of variables in the problem.
@@ -128,9 +128,9 @@ mutable struct SEQUOIA # Sequoia problem definition struct
 
     settings = SEQUOIA_Settings(inner_solver=BFGS(), max_iter=1000)
 
-    problem = SEQUOIA(2, objective_fn, settings, constraints_fn)
+    problem = SEQUOIA_pb(2, objective_fn, settings, constraints_fn)
     """
-    function SEQUOIA(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, constraints::Function)
+    function SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, constraints::Function)
         # Validate inputs
         validate_nvar(nvar)
         validate_objective(objective)
@@ -141,14 +141,14 @@ mutable struct SEQUOIA # Sequoia problem definition struct
         x0 = zeros(nvar)
         validate_x0(x0, nvar)
     
-        return SEQUOIA(nvar, objective, nothing, constraints, nothing, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
+        return SEQUOIA_pb(nvar, objective, nothing, constraints, nothing, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
     end
     
 
     """
-    SEQUOIA(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, bounds::Tuple{Vector{Float64}, Vector{Float64}})
+    SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, bounds::Tuple{Vector{Float64}, Vector{Float64}})
 
-    Construct a `SEQUOIA` problem with bounds on the variables.
+    Construct a `SEQUOIA_pb` problem with bounds on the variables.
 
     # Arguments
     - `nvar::Int`: The number of variables in the problem.
@@ -164,9 +164,9 @@ mutable struct SEQUOIA # Sequoia problem definition struct
 
     settings = SEQUOIA_Settings(inner_solver=BFGS(), max_iter=1000)
 
-    problem = SEQUOIA(2, objective_fn, settings, bounds)
+    problem = SEQUOIA_pb(2, objective_fn, settings, bounds)
     """
-    function SEQUOIA(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, bounds::Tuple{Vector{Float64}, Vector{Float64}})
+    function SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, bounds::Tuple{Vector{Float64}, Vector{Float64}})
         # Validate inputs
         validate_nvar(nvar)
         validate_objective(objective)
@@ -177,13 +177,13 @@ mutable struct SEQUOIA # Sequoia problem definition struct
         x0 = zeros(nvar)
         validate_x0(x0, nvar)
     
-        return SEQUOIA(nvar, objective, nothing, nothing, bounds, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
+        return SEQUOIA_pb(nvar, objective, nothing, nothing, bounds, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
     end
 
     """
-    SEQUOIA(nvar::Int, objective::Function)
+    SEQUOIA_pb(nvar::Int, objective::Function)
 
-    Construct a `SEQUOIA` problem with the default solver settings.
+    Construct a `SEQUOIA_pb` problem with the default solver settings.
 
     # Arguments
     - `nvar::Int`: The number of variables in the problem.
@@ -194,9 +194,9 @@ mutable struct SEQUOIA # Sequoia problem definition struct
     ```julia
     objective_fn = x -> sum(x.^2)
 
-    problem = SEQUOIA(2, objective_fn)
+    problem = SEQUOIA_pb(2, objective_fn)
     """
-    function SEQUOIA(nvar::Int, objective::Function)
+    function SEQUOIA_pb(nvar::Int, objective::Function)
         # Validate inputs
         validate_nvar(nvar)
         validate_objective(objective)
@@ -207,7 +207,7 @@ mutable struct SEQUOIA # Sequoia problem definition struct
         x0 = zeros(nvar)
         validate_x0(x0, nvar)
     
-        return SEQUOIA(nvar, objective, nothing, nothing, nothing, Int[], Int[], true, false, x0, Float64[], default_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
+        return SEQUOIA_pb(nvar, objective, nothing, nothing, nothing, Int[], Int[], true, false, x0, Float64[], default_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
     end
     
 
@@ -277,15 +277,15 @@ function validate_solver_settings(solver_settings::SEQUOIA_Settings)
 end
 
 """
-    set_objective!(pb::SEQUOIA, obj::Function)
+    set_objective!(pb::SEQUOIA_pb, obj::Function)
 
-Sets the objective function of the SEQUOIA problem.
+Sets the objective function of the SEQUOIA_pb problem.
 
 # Arguments
-- `pb`: The SEQUOIA problem instance.
+- `pb`: The SEQUOIA_pb problem instance.
 - `obj`: The new objective function to be set.
 """
-function set_objective!(pb::SEQUOIA, obj::Function)
+function set_objective!(pb::SEQUOIA_pb, obj::Function)
     validate_objective(obj)  # Ensure the new objective function is valid
     pb.objective = obj
     # Optionally reset some related fields or history
@@ -294,112 +294,112 @@ function set_objective!(pb::SEQUOIA, obj::Function)
 end
 
 """
-    set_gradient!(pb::SEQUOIA, grad::Function)
+    set_gradient!(pb::SEQUOIA_pb, grad::Function)
 
-Sets the gradient of the objective function for the SEQUOIA problem.
+Sets the gradient of the objective function for the SEQUOIA_pb problem.
 
 # Arguments
-- `pb`: The SEQUOIA problem instance.
+- `pb`: The SEQUOIA_pb problem instance.
 - `grad`: The gradient function to be set.
 """
-function set_gradient!(pb::SEQUOIA, grad::Function)
+function set_gradient!(pb::SEQUOIA_pb, grad::Function)
     validate_gradient(grad)
     pb.gradient = grad
 end
 
 """
-    set_constraints!(pb::SEQUOIA, constraints::Function)
+    set_constraints!(pb::SEQUOIA_pb, constraints::Function)
 
-Sets the constraints for the SEQUOIA problem.
+Sets the constraints for the SEQUOIA_pb problem.
 
 # Arguments
-- `pb`: The SEQUOIA problem instance.
+- `pb`: The SEQUOIA_pb problem instance.
 - `constraints`: The new constraints function to be set.
 """
-function set_constraints!(pb::SEQUOIA, constraints::Function)
+function set_constraints!(pb::SEQUOIA_pb, constraints::Function)
     validate_constraints(constraints)
     pb.constraints = constraints
     pb.jacobian = nothing  # Reset jacobian if new constraints are set
 end
 
 """
-    set_jacobian!(pb::SEQUOIA, jacobian::Function)
+    set_jacobian!(pb::SEQUOIA_pb, jacobian::Function)
 
-Sets the Jacobian of the constraints for the SEQUOIA problem.
+Sets the Jacobian of the constraints for the SEQUOIA_pb problem.
 
 # Arguments
-- `pb`: The SEQUOIA problem instance.
+- `pb`: The SEQUOIA_pb problem instance.
 - `jacobian`: The new Jacobian function to be set.
 """
-function set_jacobian!(pb::SEQUOIA, jacobian::Function)
+function set_jacobian!(pb::SEQUOIA_pb, jacobian::Function)
     validate_jacobian(jacobian)
     pb.jacobian = jacobian
 end
 
 """
-    set_bounds!(pb::SEQUOIA, bounds::Tuple{Vector{Float64}, Vector{Float64}})
+    set_bounds!(pb::SEQUOIA_pb, bounds::Tuple{Vector{Float64}, Vector{Float64}})
 
-Sets the bounds for the SEQUOIA problem.
+Sets the bounds for the SEQUOIA_pb problem.
 
 # Arguments
-- `pb`: The SEQUOIA problem instance.
+- `pb`: The SEQUOIA_pb problem instance.
 - `bounds`: A tuple of two vectors (lower and upper bounds).
 """
-function set_bounds!(pb::SEQUOIA, bounds::Tuple{Vector{Float64}, Vector{Float64}})
+function set_bounds!(pb::SEQUOIA_pb, bounds::Tuple{Vector{Float64}, Vector{Float64}})
     validate_bounds(bounds, pb.nvar)  # Ensure bounds are valid
     pb.bounds = bounds
 end
 
 """
-    set_initial_guess!(pb::SEQUOIA, x0::Vector{Float64})
+    set_initial_guess!(pb::SEQUOIA_pb, x0::Vector{Float64})
 
-Sets the initial guess for the SEQUOIA problem.
+Sets the initial guess for the SEQUOIA_pb problem.
 
 # Arguments
-- `pb`: The SEQUOIA problem instance.
+- `pb`: The SEQUOIA_pb problem instance.
 - `x0`: The new initial guess vector.
 """
-function set_initial_guess!(pb::SEQUOIA, x0::Vector{Float64})
+function set_initial_guess!(pb::SEQUOIA_pb, x0::Vector{Float64})
     validate_x0(x0, pb.nvar)
     pb.x0 = x0
 end
 
 """
-    set_solver_settings!(pb::SEQUOIA, settings::SEQUOIA_Settings)
+    set_solver_settings!(pb::SEQUOIA_pb, settings::SEQUOIA_Settings)
 
-Sets the solver settings for the SEQUOIA problem.
+Sets the solver settings for the SEQUOIA_pb problem.
 
 # Arguments
-- `pb`: The SEQUOIA problem instance.
+- `pb`: The SEQUOIA_pb problem instance.
 - `settings`: The new solver settings.
 """
-function set_solver_settings!(pb::SEQUOIA, settings::SEQUOIA_Settings)
+function set_solver_settings!(pb::SEQUOIA_pb, settings::SEQUOIA_Settings)
     validate_solver_settings(settings)
     pb.solver_settings = settings
 end
 
 """
-    set_feasibility!(pb::SEQUOIA, is_feasibility::Bool)
+    set_feasibility!(pb::SEQUOIA_pb, is_feasibility::Bool)
 
-Sets whether the SEQUOIA problem is a feasibility problem.
+Sets whether the SEQUOIA_pb problem is a feasibility problem.
 
 # Arguments
-- `pb`: The SEQUOIA problem instance.
+- `pb`: The SEQUOIA_pb problem instance.
 - `is_feasibility`: Whether the problem should focus only on feasibility (`true`) or optimization (`false`).
 """
-function set_feasibility!(pb::SEQUOIA, is_feasibility::Bool)
+function set_feasibility!(pb::SEQUOIA_pb, is_feasibility::Bool)
     pb.is_feasibility = is_feasibility
     pb.solution_history = SEQUOIA_Iterates()  # Reset solution history
 end
 
 """
-    reset_solution_history!(pb::SEQUOIA)
+    reset_solution_history!(pb::SEQUOIA_pb)
 
-Resets the solution history of the SEQUOIA problem.
+Resets the solution history of the SEQUOIA_pb problem.
 
 # Arguments
-- `pb`: The SEQUOIA problem instance.
+- `pb`: The SEQUOIA_pb problem instance.
 """
-function reset_solution_history!(pb::SEQUOIA)
+function reset_solution_history!(pb::SEQUOIA_pb)
     pb.solution_history = SEQUOIA_Iterates()
 end

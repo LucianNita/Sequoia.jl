@@ -15,13 +15,13 @@ function mock_gradient(x)
     return 2 * x
 end
 
-# Create a default solver settings for SEQUOIA
+# Create a default solver settings for SEQUOIA_pb
 default_settings = SEQUOIA_Settings(inner_solver=BFGS(), max_iter=1000, resid_tolerance=1e-6)
 
-# Test SEQUOIA Constructor with basic fields
-@testset "SEQUOIA Constructor" begin
+# Test SEQUOIA_pb Constructor with basic fields
+@testset "SEQUOIA_pb Constructor" begin
     # Test basic constructor
-    problem = SEQUOIA(2, mock_objective, default_settings)
+    problem = SEQUOIA_pb(2, mock_objective, default_settings)
     @test problem.nvar == 2
     @test typeof(problem.objective) == Function
     @test problem.solver_settings == default_settings
@@ -33,26 +33,26 @@ default_settings = SEQUOIA_Settings(inner_solver=BFGS(), max_iter=1000, resid_to
     @test problem.x0 == [0.0, 0.0]
 
     # Test constructor with constraints
-    problem_constraints = SEQUOIA(2, mock_objective, default_settings, mock_constraints)
+    problem_constraints = SEQUOIA_pb(2, mock_objective, default_settings, mock_constraints)
     @test typeof(problem_constraints.constraints) == Function
     @test problem_constraints.constraints([0.5, 0.5]) == [0.0]
     
     # Test constructor with bounds
     bounds = ([-1.0, -1.0], [1.0, 1.0])
-    problem_bounds = SEQUOIA(2, mock_objective, default_settings, bounds)
+    problem_bounds = SEQUOIA_pb(2, mock_objective, default_settings, bounds)
     @test problem_bounds.bounds == bounds
     @test problem_bounds.x0 == [0.0, 0.0]
 
     # Test invalid constructor with negative `nvar`
-    @test_throws ArgumentError SEQUOIA(-1, mock_objective, default_settings)
+    @test_throws ArgumentError SEQUOIA_pb(-1, mock_objective, default_settings)
 
     # Test invalid objective function
-    @test_throws ArgumentError SEQUOIA(2, "not a function", default_settings)
+    @test_throws ArgumentError SEQUOIA_pb(2, "not a function", default_settings)
 end
 
 # Test Setter Functions
 @testset "Setter Functions" begin
-    problem = SEQUOIA(2, mock_objective, default_settings)
+    problem = SEQUOIA_pb(2, mock_objective, default_settings)
 
     # Test set_objective!
     new_objective = x -> sum(x)
@@ -124,18 +124,18 @@ end
 # Edge case testing
 @testset "Edge Cases" begin
     # Test with 1 variable
-    problem = SEQUOIA(1, mock_objective, default_settings)
+    problem = SEQUOIA_pb(1, mock_objective, default_settings)
     @test problem.nvar == 1
     @test problem.x0 == [0.0]
 
     # Test large problem with 1000 variables
-    problem_large = SEQUOIA(1000, mock_objective, default_settings)
+    problem_large = SEQUOIA_pb(1000, mock_objective, default_settings)
     @test problem_large.nvar == 1000
     @test length(problem_large.x0) == 1000
     @test problem_large.x0 == zeros(1000)
 
     # Test empty constraints and jacobian
-    problem_empty = SEQUOIA(2, mock_objective, default_settings)
+    problem_empty = SEQUOIA_pb(2, mock_objective, default_settings)
     set_constraints!(problem_empty, x -> [])
     set_jacobian!(problem_empty, x -> [])
     @test problem_empty.constraints([]) == []

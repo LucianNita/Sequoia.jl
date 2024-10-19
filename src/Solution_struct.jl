@@ -105,63 +105,65 @@ struct SEQUOIA_Solution_step{T}
 
         return new{T}(x, fval, gval, cval, step_size, convergence_metric, outer_iteration_number, num_inner_iterations, inner_comp_time, solver_status)
     end
+    
+    # Constructor with default step size omitted
+    """
+    SEQUOIA_Solution_step(
+        x::Vector{T},
+        fval::T,
+        gval::Vector{T},
+        convergence_metric::T = 0.0,
+        outer_iteration_number::Int = 0,
+        num_inner_iterations::Union{Nothing, Int} = nothing,
+        inner_comp_time::Float64 = 0.0,
+        solver_status::SolverStatus = :success
+    )
+
+    Constructor for SEQUOIA_Solution_step without step size or constraints. This version is useful when step size and constraints are not relevant for the iteration.
+
+    - `x`: The solution vector at this iteration.
+    - `fval`: The objective function value.
+    - `gval`: The gradient vector.
+    - `convergence_metric`: Convergence metric, such as gradient norm (optional, defaults to 0.0).
+    - `outer_iteration_number`: Outer iteration number (optional, defaults to 0).
+    - `num_inner_iterations`: Number of inner iterations (optional, defaults to `nothing`).
+    - `inner_comp_time`: Inner computation time in seconds (optional, defaults to 0.0).
+    - `solver_status`: Solver status (optional, defaults to `:success`).
+    """
+    function SEQUOIA_Solution_step(
+        x::Vector{T},
+        fval::T,
+        gval::Vector{T},
+        convergence_metric::T = zero(T),
+        outer_iteration_number::Int = 0,
+        num_inner_iterations::Union{Nothing, Int} = nothing,
+        inner_comp_time::Float64 = 0.0,
+        solver_status::SolverStatus = :success
+    ) where {T}
+        validate_arguments(x, fval, gval, nothing, nothing, convergence_metric, outer_iteration_number, num_inner_iterations, inner_comp_time, solver_status)
+        return new{T}(x, fval, gval, nothing, nothing, convergence_metric, outer_iteration_number, num_inner_iterations, inner_comp_time, solver_status)
+    end
+
+    # Constructor with minimal arguments (for quick instantiation)
+    """
+    SEQUOIA_Solution_step(
+        x::Vector{T},
+        fval::T,
+        gval::Vector{T}
+    )
+
+    Constructor for SEQUOIA_Solution_step with only the solution vector `x`, the objective function value `fval`, and the gradient `gval`. All other fields are set to defaults.
+
+    - `x`: The solution vector at this iteration.
+    - `fval`: The objective function value.
+    - `gval`: The gradient vector.
+    """
+    function SEQUOIA_Solution_step(x::Vector{T}, fval::T, gval::Vector{T}) where {T}
+        return SEQUOIA_Solution_step(x, fval, gval, nothing, nothing, zero(T), 0, nothing, 0.0, :success)
+    end
 end
 
-# Constructor with default step size omitted
-"""
-SEQUOIA_Solution_step(
-    x::Vector{T},
-    fval::T,
-    gval::Vector{T},
-    convergence_metric::T = 0.0,
-    outer_iteration_number::Int = 0,
-    num_inner_iterations::Union{Nothing, Int} = nothing,
-    inner_comp_time::Float64 = 0.0,
-    solver_status::SolverStatus = :success
-)
 
-Constructor for SEQUOIA_Solution_step without step size or constraints. This version is useful when step size and constraints are not relevant for the iteration.
-
-- `x`: The solution vector at this iteration.
-- `fval`: The objective function value.
-- `gval`: The gradient vector.
-- `convergence_metric`: Convergence metric, such as gradient norm (optional, defaults to 0.0).
-- `outer_iteration_number`: Outer iteration number (optional, defaults to 0).
-- `num_inner_iterations`: Number of inner iterations (optional, defaults to `nothing`).
-- `inner_comp_time`: Inner computation time in seconds (optional, defaults to 0.0).
-- `solver_status`: Solver status (optional, defaults to `:success`).
-"""
-function SEQUOIA_Solution_step(
-    x::Vector{T},
-    fval::T,
-    gval::Vector{T},
-    convergence_metric::T = zero(T),
-    outer_iteration_number::Int = 0,
-    num_inner_iterations::Union{Nothing, Int} = nothing,
-    inner_comp_time::Float64 = 0.0,
-    solver_status::SolverStatus = :success
-) where {T}
-    validate_arguments(x, fval, gval, nothing, nothing, convergence_metric, outer_iteration_number, num_inner_iterations, inner_comp_time, solver_status)
-    return new{T}(x, fval, gval, nothing, nothing, convergence_metric, outer_iteration_number, num_inner_iterations, inner_comp_time, solver_status)
-end
-
-# Constructor with minimal arguments (for quick instantiation)
-"""
-SEQUOIA_Solution_step(
-    x::Vector{T},
-    fval::T,
-    gval::Vector{T}
-)
-
-Constructor for SEQUOIA_Solution_step with only the solution vector `x`, the objective function value `fval`, and the gradient `gval`. All other fields are set to defaults.
-
-- `x`: The solution vector at this iteration.
-- `fval`: The objective function value.
-- `gval`: The gradient vector.
-"""
-function SEQUOIA_Solution_step(x::Vector{T}, fval::T, gval::Vector{T}) where {T}
-    return SEQUOIA_Solution_step(x, fval, gval, nothing, nothing, zero(T), 0, nothing, 0.0, :success)
-end
 
 """
     validate_arguments(x, fval, gval, cval, step_size, convergence_metric, outer_iteration_number, num_inner_iterations, inner_comp_time, solver_status)
