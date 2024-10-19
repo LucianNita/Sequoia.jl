@@ -73,7 +73,7 @@ mutable struct SEQUOIA # Sequoia problem definition struct
     solver_settings::SEQUOIA_Settings                                           # Solver settings
     solution::SEQUOIA_Solution_step                                             # Store solution data regarding current step
     solution_history::SEQUOIA_Iterates                                          # Store solution history 
-    exitCode::ExitCode = ExitCode.NotCalled                                     # Termination status
+    exitCode::ExitCode                                                          # Termination status
 
     cutest_nlp::Union{Nothing, CUTEstModel}                                     # CUTEst model handle - Optional 
 
