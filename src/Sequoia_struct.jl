@@ -1,5 +1,3 @@
-module Sequoia
-
 export SEQUOIA, ExitCode, 
        set_objective!, set_gradient!, set_constraints!, set_jacobian!, set_bounds!, 
        set_initial_guess!, set_solver_settings!, set_feasibility!, reset_solution_history!
@@ -405,5 +403,3 @@ Resets the solution history of the SEQUOIA problem.
 function reset_solution_history!(pb::SEQUOIA)
     pb.solution_history = SEQUOIA_Iterates()
 end
-
-end # module Sequoia
