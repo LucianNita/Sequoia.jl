@@ -1,5 +1,5 @@
 using Sequoia
 using Test
 
-include("test_basic.jl");
-include("test_cutest_interfacing.jl");
+include("Settings_struct_testing.jl");
+include("Solution_struct_testing.jl");
