@@ -56,26 +56,26 @@ mutable struct SEQUOIA # Sequoia problem definition struct
     nvar::Int                                                                   # Problem dimension (number of variables)
 
     objective::Function                                                         # Cost function to be minimized or maximized
-    gradient::Union{Nothing, Function} = nothing                                # Gradient of the objective
+    gradient::Union{Nothing, Function}                                          # Gradient of the objective
 
-    constraints::Union{Nothing, Function} = nothing                             # Function returning a vector of constraints
-    jacobian::Union{Nothing, Function} = nothing                                # Jacobian of constraints
-    bounds::Union{Nothing, Tuple{Vector{Float64}, Vector{Float64}}} = nothing   # Bounds for the constraints 
-    eqcon::Vector{Int} = Int[]                                                  # Indices of equality constraints. Assumes c_i(x)=0
-    ineqcon::Vector{Int} = Int[]                                                # Indices of inequality constraints. Assumes c_i(x)≤0
+    constraints::Union{Nothing, Function}                                       # Function returning a vector of constraints
+    jacobian::Union{Nothing, Function}                                          # Jacobian of constraints
+    bounds::Union{Nothing, Tuple{Vector{Float64}, Vector{Float64}}}             # Bounds for the constraints 
+    eqcon::Vector{Int}                                                          # Indices of equality constraints. Assumes c_i(x)=0
+    ineqcon::Vector{Int}                                                        # Indices of inequality constraints. Assumes c_i(x)≤0
 
-    is_minimization::Bool = true                                                # True for minimization, false for maximization
-    is_feasibility::Bool = false                                                # True for feasibility problem
+    is_minimization::Bool                                                       # True for minimization, false for maximization
+    is_feasibility::Bool                                                        # True for feasibility problem
 
-    x0::Vector{Float64} = Float64[]                                             # Initial guess for the variables
-    p::Vector{Float64} = Float64[]                                              # Parameters used by various optimization methods - Used for warm starting. Can be lagrange multipliers, penalty parameter, objective upper bound etc.
+    x0::Vector{Float64}                                                         # Initial guess for the variables
+    p::Vector{Float64}                                                          # Parameters used by various optimization methods - Used for warm starting. Can be lagrange multipliers, penalty parameter, objective upper bound etc.
     
     solver_settings::SEQUOIA_Settings                                           # Solver settings
     solution::SEQUOIA_Solution_step                                             # Store solution data regarding current step
     solution_history::SEQUOIA_Iterates                                          # Store solution history 
     exitCode::ExitCode = ExitCode.NotCalled                                     # Termination status
 
-    cutest_nlp::Union{Nothing, CUTEstModel} = nothing                           # CUTEst model handle - Optional 
+    cutest_nlp::Union{Nothing, CUTEstModel}                                     # CUTEst model handle - Optional 
 
     """
     SEQUOIA(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings)
