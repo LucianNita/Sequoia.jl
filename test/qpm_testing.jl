@@ -2,16 +2,16 @@ using Test
 using LinearAlgebra
 using Optim
 
-# Include your code here (the penalty update functions, QPM solver, etc.)
-
-# ---------------------- Unit Tests ---------------------- #
-
+# ---------------------- Helper Function ---------------------- #
 # Helper function to run the QPM solver with different strategies
 function run_qpm_test(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver, update_fn, penalty_init=1.0)
-    x_opt, final_penalty = qpm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver,
-                                     penalty_init=penalty_init, penalty_mult=10.0, tol=1e-6, max_iter=1000, damping_factor=10.0, update_fn=update_fn)
-    return x_opt, final_penalty
+    solution_history = qpm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver,
+                                 penalty_init=penalty_init, penalty_mult=10.0, tol=1e-6, max_iter=1000, damping_factor=10.0, update_fn=update_fn)
+    final_step = solution_history.steps[end]  # Get the last step, which holds the final solution
+    return final_step.x, final_step  # Return the solution vector and the final SEQUOIA_Solution_step
 end
+
+# ---------------------- Unit Tests ---------------------- #
 
 # Test the penalty update functions
 @testset "Penalty Update Functions" begin
@@ -25,7 +25,7 @@ end
     @test adaptive_penalty_update(1.0, 1e-8, 1e-6, 2.0) ≈ 1.0   # Damping factor caps the penalty increase
 end
 
-# Test QPM solver on simple quadratic problem (already given in the example)
+# Test QPM solver on simple quadratic problem
 @testset "QPM Solver Simple Problem" begin
     # Define the objective function: f(x) = x₁² + x₂²
     obj_fn = x -> x[1]^2 + x[2]^2
@@ -43,16 +43,18 @@ end
     x0 = [0.25, 0.75]
 
     # Solve using fixed penalty strategy
-    x_opt_fixed, final_penalty_fixed = run_qpm_test(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, Optim.LBFGS(), fixed_penalty_update)
+    x_opt_fixed, final_step_fixed = run_qpm_test(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, Optim.LBFGS(), fixed_penalty_update)
     
     # Check that the result is correct (it should be [0.3, 0.7])
     @test norm(x_opt_fixed .- [0.3, 0.7]) < 1e-6
+    @test final_step_fixed.solver_status == SolverStatus.success
 
     # Solve using adaptive penalty strategy
-    x_opt_adaptive, final_penalty_adaptive = run_qpm_test(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, Optim.LBFGS(), adaptive_penalty_update)
+    x_opt_adaptive, final_step_adaptive = run_qpm_test(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, Optim.LBFGS(), adaptive_penalty_update)
     
     # Check that the result is correct (it should be [0.3, 0.7])
     @test norm(x_opt_adaptive .- [0.3, 0.7]) < 1e-6
+    @test final_step_adaptive.solver_status == SolverStatus.success
 end
 
 # Test for unconstrained problem
@@ -71,8 +73,9 @@ end
     x0 = [1.0, 1.0]
 
     # Solve with fixed penalty (should converge to [0.0, 0.0])
-    x_opt, final_penalty = run_qpm_test(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, Optim.LBFGS(), fixed_penalty_update)
+    x_opt, final_step = run_qpm_test(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, Optim.LBFGS(), fixed_penalty_update)
     @test norm(x_opt .- [0.0, 0.0]) < 1e-6
+    @test final_step.solver_status == SolverStatus.success
 end
 
 # Test for tight constraints
@@ -93,10 +96,11 @@ end
     x0 = [0.5, 0.5]
 
     # Solve with adaptive penalty
-    x_opt, final_penalty = run_qpm_test(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, Optim.LBFGS(), adaptive_penalty_update)
+    x_opt, final_step = run_qpm_test(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, Optim.LBFGS(), adaptive_penalty_update)
     
     # Check that the result satisfies x₁ + x₂ = 1 (within tolerance)
     @test norm(sum(x_opt) - 1.0) < 1e-6
+    @test final_step.solver_status == SolverStatus.success
 end
 
 # Test for a more complex problem with nonlinear constraints
@@ -117,8 +121,9 @@ end
     x0 = [0.5, 1.5]
 
     # Solve with adaptive penalty
-    x_opt, final_penalty = run_qpm_test(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, Optim.LBFGS(), adaptive_penalty_update)
+    x_opt, final_step = run_qpm_test(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, Optim.LBFGS(), adaptive_penalty_update)
     
     # Check that the result satisfies the constraint x₁² + x₂ >= 2
     @test x_opt[1]^2 + x_opt[2] >= 2.0
+    @test final_step.solver_status == SolverStatus.success
 end

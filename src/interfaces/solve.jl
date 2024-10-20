@@ -1,6 +1,6 @@
 using ForwardDiff
 
-function solve(problem::SEQUOIA_pb)
+function solve!(problem::SEQUOIA_pb)
     # Extract key components from SEQUOIA_pb problem
 
     # Objective function
@@ -36,55 +36,58 @@ function solve(problem::SEQUOIA_pb)
     # Initial guess
     x0 = problem.x0
     if isempty(x0)
-        warning("Initial guess `x0` must be provided. Setting a default guess to zero.")
+        @warn "Initial guess `x0` must be provided. Setting a default guess to zero."
         x0 = zeros(problem.nvar)
     end
 
     # Extract solver settings from SEQUOIA_Settings
     settings = problem.solver_settings
+    tol = settings.resid_tolerance  # Residual tolerance for convergence
+    max_iter = settings.max_iter  # Maximum number of iterations
 
     if settings.outer_method isa QPM
-        tol = settings.resid_tolerance  # Residual tolerance for convergence
-        max_iter = settings.max_iter  # Maximum number of iterations
         penalty_mult = settings.step_size === nothing ? 10.0 : settings.step_size  # Use step_size if set; otherwise, default
         damping_factor = penalty_mult
 
         # Inner solver from SEQUOIA_Settings
         inner_solver = choose_inner_solver(settings.inner_solver)
 
-        # Call the QPM algorithm with extracted data
-        x_opt, final_penalty, step_size, num_inner_iterations, solver_status = qpm_solve(
+        #  Call the QPM algorithm with extracted data, returns solution history
+        solution_history = qpm_solve(
             obj_fn, grad_fn, cons_fn, jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver;
-            penalty_mult=penalty_mult, 
-            tol=tol, 
-            max_iter=max_iter, 
+            penalty_mult=penalty_mult,
+            tol=tol,
+            max_iter=max_iter,
             damping_factor=damping_factor
         )
+    elseif settings.outer_method isa AugLag
+        penalty_mult = settings.step_size === nothing ? 10.0 : settings.step_size  # Use step_size if set; otherwise, default
+        damping_factor = penalty_mult
 
-        # Update SEQUOIA_Solution_step
-        grad_val = grad_fn(x_opt)
-        c_val = cons_fn(x_opt)
-        convergence_metric = norm(grad_val)  # Example of a convergence metric (norm of gradient)
-        outer_iter = max_iter  # Just an example; adjust based on actual outer iteration count
+        # Inner solver from SEQUOIA_Settings
+        inner_solver = choose_inner_solver(settings.inner_solver)
+        # Initialize Lagrange multipliers (if any)
+        λ_init = problem.λ_init === nothing ? zeros(length(lb)) : problem.λ_init
 
-        # Update solution and solution history
-        solution_step = SEQUOIA_Solution_step(
-            x = x_opt,
-            fval = obj_fn(x_opt),
-            gval = grad_val,
-            cval = c_val,
-            step_size = step_size,
-            convergence_metric = convergence_metric,
-            outer_iteration_number = outer_iter,
-            num_inner_iterations = num_inner_iterations,
-            inner_comp_time = 0.0,  # You can measure time taken if necessary
-            solver_status = solver_status
+        # Call the ALM algorithm with extracted data, returns solution history
+        solution_history = alm_solve(
+            obj_fn, grad_fn, cons_fn, jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver;
+            penalty_init=penalty_mult,
+            tol=tol,
+            max_iter=max_iter,
+            damping_factor=damping_factor,
+            update_fn=fixed_penalty_update,
+            λ_init=λ_init
         )
-
-        # Update the problem's current solution and solution history
-        problem.solution = solution_step
-        add_step!(problem.solution_history, solution_step)
+    else
+        error("The provided outer_method is not supported. Only QPM, AugLag are implemented.")
     end
+    # Retrieve the latest solution step from the solution history
+    last_step = last(solution_history.steps)
+    # Update SEQUOIA_Solution_step with the last step
+    problem.solution = last_step
+    # Add solution history
+    problem.solution_history = solution_history
 end
 
 # Helper function to map SEQUOIA_pb inner solvers to Optim.jl solvers
