@@ -139,9 +139,9 @@ end
 # Utility function to convert symbol or string to InnerSolverEnum
 function parse_inner_solver(solver::Union{Symbol, String})
     solver_str = String(solver)
-    if haskey(InnerSolverEnum, solver_str)
+    try
         return InnerSolverEnum[solver_str]
-    else
+    catch
         throw(ArgumentError("Invalid inner solver: $solver_str. Valid solvers are: LBFGS, BFGS, Newton, GradientDescent, NelderMead."))
     end
 end
@@ -149,9 +149,9 @@ end
 # Utility function to convert symbol or string to OuterMethodEnum
 function parse_outer_method(method::Union{Symbol, String})
     method_str = String(method)
-    if haskey(OuterMethodEnum, method_str)
+    try
         return OuterMethodEnum[method_str]
-    else
+    catch
         throw(ArgumentError("Invalid outer method: $method_str. Valid methods are: SEQUOIA, QPM, AugLag, IntPt."))
     end
 end
@@ -159,9 +159,10 @@ end
 # Utility function to convert symbol or string to ConvCrit
 function parse_convergence_criterion(conv_crit::Union{Symbol, String})
     conv_crit_str = String(conv_crit)
-    if haskey(ConvCrit, conv_crit_str)
+    try
         return ConvCrit[conv_crit_str]
-    else
+    catch
         throw(ArgumentError("Invalid convergence criterion: $conv_crit_str. Valid criteria are: GradientNorm, MaxIterations, MaxTime, ConstraintResidual, NormMaxIt, MaxItMaxTime, NormMaxTime, CombinedCrit, AdaptiveIterations."))
     end
 end
+
