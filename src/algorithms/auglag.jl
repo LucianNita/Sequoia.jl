@@ -127,7 +127,7 @@ function alm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, in
         grad_aug_fn! = (g, x) -> augmented_lagrangian_gradient!(g, x, penalty_param, λ)
 
         # Optim options
-        options = Optim.Options(g_tol=tol, iterations=10000, show_trace=false)
+        options = Optim.Options(g_tol=tol, iterations=10000, store_trace=true, extended_trace=true, show_trace=false)
 
         # Solve the unconstrained subproblem
         result = Optim.optimize(obj_aug_fn, grad_aug_fn!, x, inner_solver, options)
@@ -212,23 +212,17 @@ x0 = [0.25, 0.75]
 inner_solver = Optim.LBFGS()
 
 println("Using fixed penalty update strategy:")
-x_opt_fixed, final_penalty_fixed, final_lambda_fixed = alm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver, penalty_init=1.0, penalty_mult=10.0, tol=1e-6, max_iter=1000, update_fn=fixed_penalty_update)
+solution_history_fixed = alm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver, penalty_init=1.0, penalty_mult=10.0, tol=1e-6, max_iter=1000, update_fn=fixed_penalty_update)
 
-println("Optimal solution (fixed penalty): ", x_opt_fixed)
-println("Final penalty parameter (fixed penalty): ", final_penalty_fixed)
-println("Final Lagrange multipliers (fixed penalty): ", final_lambda_fixed)
+println("Solution history for fixed penalty: ", solution_history_fixed)
 
 println("\nUsing adaptive penalty update strategy:")
-x_opt_adaptive, final_penalty_adaptive, final_lambda_adaptive = alm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver, penalty_init=1.0, penalty_mult=10.0, tol=1e-6, max_iter=1000, damping_factor=10.0, update_fn=adaptive_penalty_update)
+solution_history_adaptive = alm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver, penalty_init=1.0, penalty_mult=10.0, tol=1e-6, max_iter=1000, damping_factor=10.0, update_fn=adaptive_penalty_update)
 
-println("Optimal solution (adaptive penalty): ", x_opt_adaptive)
-println("Final penalty parameter (adaptive penalty): ", final_penalty_adaptive)
-println("Final Lagrange multipliers (adaptive penalty): ", final_lambda_adaptive)
+println("Solution history for adaptive penalty: ", solution_history_adaptive)
 
 # Example of warm starting with Lagrange multipliers
 println("\nUsing warm start for Lagrange multipliers:")
-x_opt_warm, final_penalty_warm, final_lambda_warm = alm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver, penalty_init=1.0, penalty_mult=10.0, tol=1e-6, max_iter=1000, update_fn=fixed_penalty_update, λ_init=final_lambda_fixed)
+solution_history_warm = alm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver, penalty_init=1.0, penalty_mult=10.0, tol=1e-6, max_iter=1000, update_fn=fixed_penalty_update, λ_init=final_lambda_fixed)
 
-println("Optimal solution (warm start): ", x_opt_warm)
-println("Final penalty parameter (warm start): ", final_penalty_warm)
-println("Final Lagrange multipliers (warm start): ", final_lambda_warm)
+println("Solution history for warm start: ", solution_history_warm)

@@ -1,7 +1,7 @@
 using NLPModels, CUTEst
 
 # Interface function to convert a CUTEst model into a SEQUOIA_pb problem
-function cutest_to_sequoia(cutest_model::CUTEst.Model, solver_settings::SEQUOIA_Settings)
+function cutest_to_sequoia(cutest_model::CUTEstModel, solver_settings::SEQUOIA_Settings)
     # Create an NLPModel from the CUTEst model
     nlp = CUTEstNLPModel(cutest_model)
 
