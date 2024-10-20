@@ -191,13 +191,14 @@ function validate_arguments(
     inner_comp_time::Float64, 
     solver_status::SolverStatus
 )
+
     @assert !isempty(x) "Solution vector `x` cannot be empty."
     @assert !isempty(gval) "Gradient vector `gval` cannot be empty."
     @assert isnumeric(fval) "Objective function value `fval` must be numeric."
     @assert isnumeric(convergence_metric) "Convergence metric `convergence_metric` must be numeric."
     @assert inner_comp_time >= 0 "Inner computation time must be non-negative."
     @assert outer_iteration_number >= 0 "Outer iteration number must be non-negative."
-
+    
     if !isnothing(num_inner_iterations)
         @assert num_inner_iterations >= 0 "Number of inner iterations must be non-negative."
     end
@@ -208,11 +209,9 @@ function validate_arguments(
         @assert all(isnumeric, cval) "Constraint values `cval` must be a vector of numeric values or `nothing`."
     end
 
-    valid_statuses = [SolverStatus.success, SolverStatus.failed, SolverStatus.exceeded_iter, SolverStatus.exceeded_time, SolverStatus.f_and_g_not_finite, SolverStatus.stopped, SolverStatus.invalid_start, SolverStatus.not_converged, SolverStatus.infeasibility_detected, SolverStatus.positive_decrease, SolverStatus.reached_ftol, SolverStatus.reached_xtol, SolverStatus.reached_gtol]
-
+    valid_statuses = [success, failed, exceeded_iter, exceeded_time, f_and_g_not_finite, stopped, invalid_start, not_converged, infeasibility_detected, positive_decrease, reached_ftol, reached_xtol, reached_gtol]
     @assert solver_status in valid_statuses "Invalid solver status: $solver_status. Must be one of: $valid_statuses."
 end
-
 
 """
     isnumeric(x)
