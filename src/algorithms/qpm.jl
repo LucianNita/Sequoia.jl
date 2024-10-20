@@ -80,6 +80,7 @@ function qpm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, in
     x = copy(x0)  # Copy the initial guess to avoid modifying the original
     penalty_param = penalty_init  # Set initial penalty parameter
     iteration = 0  # Initialize iteration counter
+    solution_history = SEQUOIA_Iterates()  # Initialize the solution history
 
     # Helper function: Augmented objective with penalty for equality and inequality constraints
     function augmented_objective(x, penalty_param)
@@ -146,21 +147,38 @@ function qpm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, in
         grad_aug_fn! = (g, x) -> augmented_gradient!(g, x, penalty_param)
         
         # Set Optim options
-        options = Optim.Options(g_tol=tol, iterations=10000, show_trace=false)
+        options = Optim.Options(g_tol=tol, iterations=10000, store_trace=true, extended_trace=true, show_trace=true)
 
         # Solve the unconstrained subproblem using the inner solver
         result = optimize(obj_aug_fn, grad_aug_fn!, x, inner_solver, options)
 
         # Extract the optimized solution from the subproblem
-        x = Optim.minimizer(result)
+        x = result.minimizer
         
         # Compute the constraint violation for adaptive updates
         constraint_violation = compute_constraint_violation(x)
 
+        # Save a SEQUOIA_Solution_step after each optimize call
+        fval = result.minimum  # Objective function value
+        gval = grad_fn(x)  # Gradient of the objective
+        cval = cons_fn(x)  # Constraint values
+        step_size = penalty_param  # Step size used by the optimizer
+        convergence_metric = result.g_residual  # Convergence metric (gradient norm)
+        solver_status = Optim.converged(result) ? success : not_converged  # Solver status
+        inner_comp_time = result.time_run  # Computation time
+        num_inner_iterations = result.iterations  # Number of inner iterations
+        x_tr = Optim.x_trace(result)  # This returns the history of iterates
+
+        # Create a SEQUOIA_Solution_step and save it to history
+        step = SEQUOIA_Solution_step(
+            x, fval, gval, cval, step_size, convergence_metric, iteration, num_inner_iterations, inner_comp_time, solver_status, x_tr
+        )
+        add_step!(solution_history, step)  # Add step to history
+
         # Check for convergence based on the constraint violation
         if constraint_violation < tol
             println("Converged after $iteration iterations.")
-            return x_opt, penalty_param, 0.01, num_inner_iterations, solver_status
+            return solution_history
         end
 
         # Check the number of arguments required by the update function
@@ -178,7 +196,7 @@ function qpm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, in
 
     # If maximum iterations are reached, return the current solution and penalty
     println("Maximum iterations reached.")
-    return x_opt, penalty_param, 0.01, num_inner_iterations, solver_status
+    return solution_history
 end
 
 # Example usage: (for testing)
@@ -209,16 +227,5 @@ x0 = [0.25, 0.75]
 # Solve using Quadratic Penalty Method with Optim.jl and the chosen inner solver
 inner_solver = Optim.LBFGS()
 
-# Use fixed penalty update strategy
-println("Using fixed penalty update strategy:")
-x_opt_fixed, final_penalty_fixed = qpm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver, penalty_init=1.0, penalty_mult=10.0, tol=1e-6, max_iter=1000, update_fn=fixed_penalty_update)
-
-println("Optimal solution (fixed penalty): ", x_opt_fixed)
-println("Final penalty parameter (fixed penalty): ", final_penalty_fixed)
-
-# Use adaptive penalty update strategy
-println("\nUsing adaptive penalty update strategy:")
-x_opt_adaptive, final_penalty_adaptive = qpm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver, penalty_init=1.0, penalty_mult=10.0, tol=1e-6, max_iter=1000, damping_factor=10.0, update_fn=adaptive_penalty_update)
-
-println("Optimal solution (adaptive penalty): ", x_opt_adaptive)
-println("Final penalty parameter (adaptive penalty): ", final_penalty_adaptive)
+# Call the modified qpm_solve
+sh = qpm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver)
