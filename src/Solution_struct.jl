@@ -109,7 +109,7 @@ struct SEQUOIA_Solution_step
             # Validate the input before creating the struct
             validate_arguments(x, fval, gval, cval, step_size, convergence_metric, outer_iteration_number, num_inner_iterations, inner_comp_time, solver_status)
         
-            return SEQUOIA_Solution_step(x, fval, gval, cval, step_size, convergence_metric, outer_iteration_number, num_inner_iterations, inner_comp_time, solver_status, x_iterates)
+            return new(x, fval, gval, cval, step_size, convergence_metric, outer_iteration_number, num_inner_iterations, inner_comp_time, solver_status, x_iterates)
         end
     
     # Constructor with default step size omitted
@@ -149,7 +149,7 @@ struct SEQUOIA_Solution_step
         # Validate the input before creating the struct
         validate_arguments(x, fval, gval, nothing, nothing, convergence_metric, outer_iteration_number, num_inner_iterations, inner_comp_time, solver_status)
     
-        return SEQUOIA_Solution_step(x, fval, gval, nothing, nothing, convergence_metric, outer_iteration_number, num_inner_iterations, inner_comp_time, solver_status,[x])
+        return new(x, fval, gval, nothing, nothing, convergence_metric, outer_iteration_number, num_inner_iterations, inner_comp_time, solver_status,[x])
     end
     
 
@@ -168,7 +168,7 @@ struct SEQUOIA_Solution_step
     - `gval`: The gradient vector.
     """
     function SEQUOIA_Solution_step(x::Vector{Float64}, fval::Float64, gval::Vector{Float64})
-        return SEQUOIA_Solution_step(x, fval, gval, nothing, nothing, 0.0, 0, nothing, 0.0, :success, [x])
+        return new(x, fval, gval, nothing, nothing, 0.0, 0, nothing, 0.0, :success, [x])
     end
 end
 

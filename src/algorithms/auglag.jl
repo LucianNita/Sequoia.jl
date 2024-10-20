@@ -1,4 +1,5 @@
-using LinearAlgebra, Optim
+using LinearAlgebra
+import Optim
 
 # Fixed penalty update function (same as in QPM)
 function fixed_penalty_update(penalty_param, penalty_mult)
@@ -118,7 +119,7 @@ function alm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, in
         options = Optim.Options(g_tol=tol, iterations=10000, show_trace=false)
 
         # Solve the unconstrained subproblem
-        result = optimize(obj_aug_fn, grad_aug_fn!, x, inner_solver, options)
+        result = Optim.optimize(obj_aug_fn, grad_aug_fn!, x, inner_solver, options)
         x = Optim.minimizer(result)
 
         # Compute constraint violation

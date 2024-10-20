@@ -1,4 +1,4 @@
-using Optim
+import Optim
 using LinearAlgebra
 
 # Fixed penalty update function
@@ -150,7 +150,7 @@ function qpm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, in
         options = Optim.Options(g_tol=tol, iterations=10000, store_trace=true, extended_trace=true, show_trace=true)
 
         # Solve the unconstrained subproblem using the inner solver
-        result = optimize(obj_aug_fn, grad_aug_fn!, x, inner_solver, options)
+        result = Optim.optimize(obj_aug_fn, grad_aug_fn!, x, inner_solver, options)
 
         # Extract the optimized solution from the subproblem
         x = result.minimizer
