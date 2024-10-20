@@ -1,4 +1,5 @@
 using CUTEst
+
 export SEQUOIA_pb, ExitCode, 
        set_objective!, set_gradient!, set_constraints!, set_jacobian!, set_bounds!, 
        set_initial_guess!, set_solver_settings!, set_feasibility!, reset_solution_history!
@@ -24,7 +25,8 @@ The `SEQUOIA_pb` struct defines an optimization problem to be solved using the S
 - `gradient::Union{Nothing, Function}`: Gradient of the objective function (optional). Defaults to `nothing`.
 - `constraints::Union{Nothing, Function}`: Function returning a vector of constraints (optional). Defaults to `nothing`.
 - `jacobian::Union{Nothing, Function}`: Jacobian of the constraints (optional). Defaults to `nothing`.
-- `bounds::Union{Nothing, Tuple{Vector{Float64}, Vector{Float64}}}`: Tuple of lower and upper bounds for the variables (optional). Defaults to `nothing`.
+- `l_bounds::Union{Nothing, Vector{Float64}}`: Lower bounds for the constraints (optional). Defaults to `nothing`.
+- `u_bounds::Union{Nothing, Vector{Float64}}`: Upper bounds for the constraints (optional). Defaults to `nothing`.
 - `eqcon::Vector{Int}`: Indices of equality constraints, assumes constraints are of the form `c_i(x) = 0`. Defaults to an empty vector.
 - `ineqcon::Vector{Int}`: Indices of inequality constraints, assumes constraints are of the form `c_i(x) ≤ 0`. Defaults to an empty vector.
 - `is_minimization::Bool`: Whether the problem is a minimization problem (`true`) or a maximization problem (`false`). Defaults to `true`.
@@ -61,7 +63,8 @@ mutable struct SEQUOIA_pb # Sequoia problem definition struct
 
     constraints::Union{Nothing, Function}                                       # Function returning a vector of constraints
     jacobian::Union{Nothing, Function}                                          # Jacobian of constraints
-    bounds::Union{Nothing, Tuple{Vector{Float64}, Vector{Float64}}}             # Bounds for the constraints 
+    l_bounds::Union{Nothing, Vector{Float64}}                                   # Lower bounds for the constraints
+    u_bounds::Union{Nothing, Vector{Float64}}                                   # Upper bounds for the constraints
     eqcon::Vector{Int}                                                          # Indices of equality constraints. Assumes c_i(x)=0
     ineqcon::Vector{Int}                                                        # Indices of inequality constraints. Assumes c_i(x)≤0
 
@@ -81,7 +84,7 @@ mutable struct SEQUOIA_pb # Sequoia problem definition struct
     """
     SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings)
 
-    Construct a `SEQUOIA_pb` problem with the required fields: `nvar` (number of variables), `objective` (cost function), and `solver_settings`.
+    Construct a `SEQUOIA_pb` problem with the required fields: `nvar` (number of variables), `objective` (cost function), and `solver_settings`. This version assumes no constraints or bounds.
 
     # Arguments
     - `nvar::Int`: The number of variables in the optimization problem.
@@ -106,14 +109,14 @@ mutable struct SEQUOIA_pb # Sequoia problem definition struct
         x0 = zeros(nvar)
         validate_x0(x0, nvar)
     
-        return SEQUOIA_pb(nvar, objective, nothing, nothing, nothing, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
+        return SEQUOIA_pb(nvar, objective, nothing, nothing, nothing, nothing, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
     end
     
 
     """
     SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, constraints::Function)
 
-    Construct a `SEQUOIA_pb` problem with the objective function and constraints.
+    Construct a `SEQUOIA_pb` problem with the objective function and constraints. No bounds are assumed in this constructor.
 
     # Arguments
     - `nvar::Int`: The number of variables in the problem.
@@ -142,20 +145,21 @@ mutable struct SEQUOIA_pb # Sequoia problem definition struct
         x0 = zeros(nvar)
         validate_x0(x0, nvar)
     
-        return SEQUOIA_pb(nvar, objective, nothing, constraints, nothing, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
+        return SEQUOIA_pb(nvar, objective, nothing, constraints, nothing, nothing, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
     end
     
 
     """
-    SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, bounds::Tuple{Vector{Float64}, Vector{Float64}})
+    SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, l_bounds::Vector{Float64}, u_bounds::Vector{Float64})
 
-    Construct a `SEQUOIA_pb` problem with bounds on the variables.
+    Construct a `SEQUOIA_pb` problem with lower and upper bounds for the constraints.
 
     # Arguments
     - `nvar::Int`: The number of variables in the problem.
     - `objective::Function`: The objective function to be minimized or maximized.
     - `solver_settings::SEQUOIA_Settings`: The solver settings, including algorithms and tolerances.
-    - `bounds::Tuple{Vector{Float64}, Vector{Float64}}`: A tuple containing two vectors: the lower and upper bounds for the variables.
+    - `l_bounds::Vector{Float64}`: A vector of lower bounds for the constraints.
+    - `u_bounds::Vector{Float64}`: A vector of upper bounds for the constraints.
 
     # Example
 
@@ -178,7 +182,7 @@ mutable struct SEQUOIA_pb # Sequoia problem definition struct
         x0 = zeros(nvar)
         validate_x0(x0, nvar)
     
-        return SEQUOIA_pb(nvar, objective, nothing, nothing, bounds, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
+        return SEQUOIA_pb(nvar, objective, nothing, nothing, l_bounds, u_bounds, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
     end
 
     """
@@ -208,7 +212,7 @@ mutable struct SEQUOIA_pb # Sequoia problem definition struct
         x0 = zeros(nvar)
         validate_x0(x0, nvar)
     
-        return SEQUOIA_pb(nvar, objective, nothing, nothing, nothing, Int[], Int[], true, false, x0, Float64[], default_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
+        return SEQUOIA_pb(nvar, objective, nothing, nothing, nothing, nothing, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
     end
     
 
@@ -253,12 +257,11 @@ function validate_jacobian(jacobian::Union{Nothing, Function})
     end
 end
 
-# Validate bounds: must be a tuple of two vectors, both the same length as `nvar`
-function validate_bounds(bounds::Union{Nothing, Tuple{Vector{Float64}, Vector{Float64}}}, nvar::Int)
-    if bounds !== nothing
-        lower_bounds, upper_bounds = bounds
-        if length(lower_bounds) != nvar || length(upper_bounds) != nvar
-            throw(ArgumentError("The bounds vectors must have the same length as the number of variables `nvar`. Expected length: $nvar."))
+#Validates that the lower and upper bounds are consistent. Both bounds must be vectors of the same length as `nvar`.
+function validate_bounds(l_bounds::Union{Nothing, Vector{Float64}}, u_bounds::Union{Nothing, Vector{Float64}}, nvar::Int)
+    if l_bounds !== nothing && u_bounds !== nothing
+        if length(l_bounds) != nvar || length(u_bounds) != nvar
+            throw(ArgumentError("The lower and upper bounds must have the same length as the number of variables `nvar`. Expected length: $nvar."))
         end
     end
 end
@@ -338,17 +341,19 @@ function set_jacobian!(pb::SEQUOIA_pb, jacobian::Function)
 end
 
 """
-    set_bounds!(pb::SEQUOIA_pb, bounds::Tuple{Vector{Float64}, Vector{Float64}})
+    set_bounds!(pb::SEQUOIA_pb, l_bounds::Vector{Float64}, u_bounds::Vector{Float64})
 
-Sets the bounds for the SEQUOIA_pb problem.
+Sets the lower and upper bounds for the SEQUOIA_pb problem.
 
 # Arguments
 - `pb`: The SEQUOIA_pb problem instance.
-- `bounds`: A tuple of two vectors (lower and upper bounds).
+- `l_bounds`: A vector of lower bounds for the constraints.
+- `u_bounds`: A vector of upper bounds for the constraints.
 """
-function set_bounds!(pb::SEQUOIA_pb, bounds::Tuple{Vector{Float64}, Vector{Float64}})
-    validate_bounds(bounds, pb.nvar)  # Ensure bounds are valid
-    pb.bounds = bounds
+function set_bounds!(pb::SEQUOIA_pb, l_bounds::Vector{Float64}, u_bounds::Vector{Float64})
+    validate_bounds(l_bounds, u_bounds, pb.nvar)  # Ensure bounds are valid
+    pb.l_bounds = l_bounds
+    pb.u_bounds = u_bounds
 end
 
 """

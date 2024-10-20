@@ -29,7 +29,8 @@ default_settings = SEQUOIA_Settings(inner_solver=BFGS(), max_iter=1000, resid_to
     @test problem.gradient === nothing
     @test problem.constraints === nothing
     @test problem.jacobian === nothing
-    @test problem.bounds === nothing
+    @test problem.l_bounds === nothing
+    @test problem.u_bounds === nothing
     @test problem.x0 == [0.0, 0.0]
 
     # Test constructor with constraints
@@ -38,9 +39,11 @@ default_settings = SEQUOIA_Settings(inner_solver=BFGS(), max_iter=1000, resid_to
     @test problem_constraints.constraints([0.5, 0.5]) == [0.0]
     
     # Test constructor with bounds
-    bounds = ([-1.0, -1.0], [1.0, 1.0])
-    problem_bounds = SEQUOIA_pb(2, mock_objective, default_settings, bounds)
-    @test problem_bounds.bounds == bounds
+    l_bounds = [-1.0, -1.0]
+    u_bounds = [1.0, 1.0]
+    problem_bounds = SEQUOIA_pb(2, mock_objective, default_settings, l_bounds, u_bounds)
+    @test problem_bounds.l_bounds == l_bounds
+    @test problem_bounds.u_bounds == u_bounds
     @test problem_bounds.x0 == [0.0, 0.0]
 
     # Test invalid constructor with negative `nvar`
@@ -88,12 +91,14 @@ end
     @test_throws ArgumentError set_jacobian!(problem, "not a function")
 
     # Test set_bounds!
-    new_bounds = ([-2.0, -2.0], [2.0, 2.0])
-    set_bounds!(problem, new_bounds)
-    @test problem.bounds == new_bounds
+    new_l_bounds = [-2.0, -2.0]
+    new_u_bounds = [2.0, 2.0]
+    set_bounds!(problem, new_l_bounds, new_u_bounds)
+    @test problem.l_bounds == new_l_bounds
+    @test problem.u_bounds == new_u_bounds
 
     # Test invalid bounds with wrong dimensions
-    @test_throws ArgumentError set_bounds!(problem, ([-1.0], [1.0]))
+    @test_throws ArgumentError set_bounds!(problem, [-1.0], [1.0])
 
     # Test set_initial_guess!
     new_x0 = [0.5, 0.5]

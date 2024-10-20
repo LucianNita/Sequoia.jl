@@ -160,7 +160,7 @@ function qpm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, in
         # Check for convergence based on the constraint violation
         if constraint_violation < tol
             println("Converged after $iteration iterations.")
-            return x, penalty_param
+            return x_opt, penalty_param, 0.01, num_inner_iterations, solver_status
         end
 
         # Check the number of arguments required by the update function
@@ -178,7 +178,7 @@ function qpm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, in
 
     # If maximum iterations are reached, return the current solution and penalty
     println("Maximum iterations reached.")
-    return x, penalty_param
+    return x_opt, penalty_param, 0.01, num_inner_iterations, solver_status
 end
 
 # Example usage: (for testing)
