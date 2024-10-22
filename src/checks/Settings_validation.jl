@@ -1,3 +1,5 @@
+export validate_sequoia_settings!
+
 """
     validate_sequoia_settings!(settings::SEQUOIA_Settings)
 

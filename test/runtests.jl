@@ -5,6 +5,7 @@ include("test_structures/Settings_struct_testing.jl");
 #include("test_structures/Solution_struct_testing.jl");
 #include("test_structures/Sequoia_struct_testing.jl");
 
+include("test_checks/Settings_validation_testing.jl");
 #include("test_checks/verifications_testing.jl");
 
 #include("test_interfaces/cutest_interface_testing.jl");
