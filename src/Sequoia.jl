@@ -1,12 +1,11 @@
-#using CUTEst
-
 module Sequoia
 
 include("structures/Settings_struct.jl")
-#include("structures/Solution_struct.jl")
+include("structures/Solution_struct.jl")
 #include("structures/Sequoia_struct.jl")
 
 include("checks/Settings_validation.jl");
+include("checks/Solution_validation.jl");
 #include("checks/verifications.jl");
 
 #include("interfaces/cutest_interface.jl");

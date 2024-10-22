@@ -69,22 +69,22 @@ The `SEQUOIA_Settings` struct stores the key settings required for solving optim
 - `solver_params::Union{Nothing, Vector{Float64}}`: Optional solver-related parameters, such as step sizes, penalty parameters, or Lagrange multipliers.
 """
 mutable struct SEQUOIA_Settings
-    outer_method::Symbol               # Outer optimization method (:SEQUOIA, :QPM, :AugLag, :IntPt).
-    inner_solver::Symbol               # The inner solver used for unconstrained problems (:LBFGS, :BFGS, etc.).
-    feasibility::Bool                  # Solve feasibility problem (true) or account for an objective (false)?
+    outer_method::Symbol                           # Outer optimization method (:SEQUOIA, :QPM, :AugLag, :IntPt).
+    inner_solver::Symbol                           # The inner solver used for unconstrained problems (:LBFGS, :BFGS, etc.).
+    feasibility::Bool                              # Solve feasibility problem (true) or account for an objective (false)?
     
-    resid_tolerance::Real              # Residual tolerance for constraints.
-    max_iter_outer::Int                # Maximum number of outer iterations allowed.
-    max_time_outer::Real               # Maximum total computational time (in seconds).
+    resid_tolerance::Real                          # Residual tolerance for constraints.
+    max_iter_outer::Int                            # Maximum number of outer iterations allowed.
+    max_time_outer::Real                           # Maximum total computational time (in seconds).
 
-    conv_crit::Symbol                  # Convergence criterion for the inner solve (:GradientNorm, etc.).
-    max_iter_inner::Union{Nothing, Int}# Maximum number of inner iterations allowed.
-    max_time_inner::Union{Nothing, Real}# Maximum computational time for each inner solve call (in seconds).
+    conv_crit::Symbol                              # Convergence criterion for the inner solve (:GradientNorm, etc.).
+    max_iter_inner::Union{Nothing, Int}            # Maximum number of inner iterations allowed.
+    max_time_inner::Union{Nothing, Real}           # Maximum computational time for each inner solve call (in seconds).
 
-    cost_tolerance::Union{Nothing, Real}# Desired optimality gap.
-    cost_min::Union{Nothing, Real}      # Minimum cost - useful for spotting possible unbounded problems.
+    cost_tolerance::Union{Nothing, Real}           # Desired optimality gap.
+    cost_min::Union{Nothing, Real}                 # Minimum cost - useful for spotting possible unbounded problems.
 
-    solver_params::Union{Nothing, Vector{Float64}}# Optional solver-related parameters.
+    solver_params::Union{Nothing, Vector{Float64}} # Optional solver-related parameters.
 
     """
     SEQUOIA_Settings(outer_method::Symbol, inner_solver::Symbol, feasibility::Bool, 
