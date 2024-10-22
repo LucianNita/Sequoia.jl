@@ -1,47 +1,260 @@
-# Verification function to ensure input consistency
+using ForwardDiff
+
+export validate_pb
+
 """
-    verify_input_consistency(cons_fn, x0, lb, ub, eq_indices, ineq_indices)
+    validate_pb(pb::SEQUOIA_pb)
 
-Verifies that the constraints are consistent:
-- The number of constraints returned by `cons_fn(x)` must match the total number of constraints given by `eq_indices` and `ineq_indices`.
-- Indices in `eq_indices` and `ineq_indices` must cover exactly the set of all constraints (i.e., all indices from `1` to `length(cons_fn(x))` must appear exactly once).
-- The lower bounds and upper bounds must have consistent sizes, and the lower bound must be <= the upper bound.
+Main validation function for a `SEQUOIA_pb` optimization problem. Ensures all required components of the problem 
+are correctly defined, including the number of variables, initial guess, objective function, gradient, constraints, 
+and solver settings.
 
-# Arguments:
-- `cons_fn`: A function that returns the constraint values ( g(x) ), which is a vector of constraints.
-- `x0`: The initial guess for the decision variables ( x ), used to check the number of constraints.
-- `lb`: A vector of lower bounds for the constraints.
-- `ub`: A vector of upper bounds for the constraints.
-- `eq_indices`: A vector containing the indices of the constraints that are equality constraints. These indices refer to entries in ( g(x) ) where ( g_i(x) = lb_i = ub_i ).
-- `ineq_indices`: A vector containing the indices of the constraints that are inequality constraints. These indices refer to entries in ( g(x) ) where ( lb_i ≤ g_i(x) ≤ ub_i ).
+# Arguments
 
-# Throws:
-- `error`: If the number of constraints returned by `cons_fn(x0)` does not match the combined size of `eq_indices` and `ineq_indices`.
-- `error`: If the indices in `eq_indices` and `ineq_indices` do not cover all constraints exactly once.
-- `error`: If the size of `lb` and `ub` are not equal.
-- `error`: If any element in `lb` is greater than its corresponding element in `ub`.
+- `pb`: The `SEQUOIA_pb` problem instance to validate.
+
+# Throws
+
+- `ArgumentError` if any of the fields or functions in the problem are incorrectly defined or inconsistent.
 """
-function verify_input_consistency(cons_fn, x0, lb, ub, eq_indices, ineq_indices)
-    # Check if lower and upper bounds have the same length
-    if length(lb) != length(ub)
-        error("Lower bounds and upper bounds must be of equal length.")
+function validate_pb(pb::SEQUOIA_pb) # Main validation function for SEQUOIA_pb
+    # Validate the number of variables
+    validate_nvar(pb.nvar)
+    
+    # Validate the initial guess
+    validate_x0(pb.x0, pb.nvar)
+
+    # Validate the objective function
+    validate_objective(pb.objective, pb.x0)
+
+    # Validate the gradient function (with fallback to automatic differentiation if not set)
+    validate_gradient!(pb)
+
+    # Validate the constraints function and its consistency with the specified equality/inequality indices
+    validate_constraints!(pb)
+
+    # Validate the solver settings
+    solver_settings_fallback(pb.solver_settings)
+end
+
+"""
+    validate_nvar(nvar::Int)
+
+Validates that the number of variables `nvar` is a positive integer.
+
+# Arguments
+
+- `nvar`: The number of variables to validate.
+
+# Throws
+
+- `ArgumentError` if `nvar` is not a positive integer.
+"""
+function validate_nvar(nvar::Int)
+    if nvar <= 0
+        throw(ArgumentError("The number of variables `nvar` must be a positive integer."))
+    end
+end
+
+"""
+    validate_x0(x0::Vector{Float64}, nvar::Int)
+
+Validates that the length of the initial guess vector `x0` matches the number of variables `nvar`.
+
+# Arguments
+
+- `x0`: The initial guess vector.
+- `nvar`: The expected number of variables.
+
+# Throws
+
+- `ArgumentError` if the length of `x0` does not match `nvar`.
+"""
+function validate_x0(x0::Vector{Float64}, nvar::Int)
+    if length(x0) != nvar
+        throw(ArgumentError("The length of the initial guess `x0` must be equal to `nvar`."))
+    end
+end
+
+
+"""
+    validate_objective(objective::Union{Nothing, Function}, x0::Vector{Float64})
+
+Validates that the objective function is callable and returns a scalar of type `Float64`. 
+Throws an error if the objective is not defined or returns invalid output.
+
+# Arguments
+
+- `objective`: The objective function to validate.
+- `x0`: The initial guess vector to test the objective function.
+
+# Throws
+
+- `ArgumentError` if the objective is not defined or does not return a scalar `Float64`.
+"""
+function validate_objective(objective::Union{Nothing, Function}, x0::Vector{Float64})
+    if objective === nothing
+        throw(ArgumentError("An objective function is required. Please set one using `set_objective!(problem::SEQUOIA_pb)`."))
     end
 
-    # Ensure each lower bound is less than or equal to its corresponding upper bound
-    if any(lb .> ub)
-        error("Each lower bound must be less than or equal to the corresponding upper bound.")
+    # Test the objective function with the initial guess to check its output
+    result = objective(x0)
+    
+    if !(isa(result, Float64))
+        throw(ArgumentError("The objective function must return a scalar of type `Float64`. Multi-objective optimization is not supported."))
+    end
+end
+
+"""
+    validate_gradient!(pb::SEQUOIA_pb)
+
+Validates that the gradient function is callable and returns a vector of length `nvar`. 
+If no gradient is provided, automatic differentiation using `ForwardDiff` is used as a fallback.
+
+# Arguments
+
+- `pb`: The `SEQUOIA_pb` problem instance.
+
+# Throws
+
+- `ArgumentError` if the gradient function does not return a vector of `Float64` of the correct size.
+"""
+function validate_gradient!(pb::SEQUOIA_pb)
+    if pb.gradient === nothing
+        @warn "A gradient is required. Setting one using Automatic Differentiation with ForwardDiff."
+        pb.gradient = x -> ForwardDiff.gradient(pb.objective, x)
     end
 
-    # Ensure the number of constraints matches the number of specified indices
-    num_constraints = length(cons_fn(x0))
-    total_specified_constraints = length(eq_indices) + length(ineq_indices)
-    if num_constraints != total_specified_constraints
-        error("The number of constraints returned by the constraint function does not match the total number of specified constraints (equality + inequality).")
+    # Test the gradient function with the initial guess to check its output
+    result = pb.gradient(pb.x0)
+
+    # Check if the result is a vector of Float64 and matches the size of `nvar`
+    if !(isa(result, Vector{Float64}) && length(result) == pb.nvar)
+        throw(ArgumentError("The gradient function must return a vector of Float64 of size `nvar`."))
+    end
+end
+
+"""
+    validate_constraints!(pb::SEQUOIA_pb)
+
+Validates the constraints function if provided, ensuring consistency with the specified equality and inequality constraints. 
+If no constraints are provided, a warning is issued. Also validates the Jacobian if needed.
+
+# Arguments
+
+- `pb`: The `SEQUOIA_pb` problem instance.
+
+# Throws
+
+- `ArgumentError` if the constraints are inconsistent with the equality/inequality indices or if the Jacobian is invalid.
+"""
+function validate_constraints!(pb::SEQUOIA_pb)
+    if pb.constraints === nothing 
+        @warn "No constraints are set. Ensure this is intended, as SEQUOIA is tailored for constrained optimization."
     end
 
-    # Ensure all indices are covered exactly once by eq_indices and ineq_indices
-    all_indices = sort(vcat(eq_indices, ineq_indices))
-    if all_indices != collect(1:num_constraints)
-        error("Indices for equality and inequality constraints must cover all constraint indices exactly once.")
+    if pb.constraints !== nothing 
+        # Ensure the number of constraints matches the number of specified indices
+        num_constraints = length(pb.constraints(pb.x0))
+        total_specified_constraints = length(pb.eqcon) + length(pb.ineqcon)
+        if num_constraints != total_specified_constraints
+            throw(ArgumentError("The number of constraints returned by the constraint function does not match the total number of specified constraints (equality + inequality)."))
+        end
+
+        # Ensure all indices are covered exactly once by eqcon and ineqcon
+        all_indices = sort(vcat(pb.eqcon, pb.ineqcon))
+        if all_indices != collect(1:num_constraints)
+            throw(ArgumentError("Indices for equality and inequality constraints must cover all constraint indices exactly once."))
+        end
+
+        # Validate the Jacobian
+        validate_jacobian!(pb)
+    end
+end
+
+"""
+    validate_jacobian!(pb::SEQUOIA_pb)
+
+Validates the Jacobian function if provided. If no Jacobian is defined, automatic differentiation with `ForwardDiff` is used as a fallback.
+
+# Arguments
+
+- `pb`: The `SEQUOIA_pb` problem instance.
+
+# Throws
+
+- `ArgumentError` if the Jacobian is invalid or does not return the correct matrix size.
+"""
+function validate_jacobian!(pb::SEQUOIA_pb)
+    if pb.jacobian === nothing
+        @warn "A Jacobian is required. Setting one using Automatic Differentiation with ForwardDiff."
+        pb.jacobian = x -> ForwardDiff.jacobian(pb.constraints, x)
+    end
+
+    # Test the jacobian function with the initial guess to check its output
+    result = pb.jacobian(pb.x0)
+    num_constraints = length(pb.constraints(pb.x0))
+
+    # Check if the result is a matrix of Float64 and has the correct size (num_constraints x nvar)
+    if !(isa(result, Matrix{Float64}) && size(result) == (num_constraints, pb.nvar))
+        throw(ArgumentError("The Jacobian must be a matrix of Float64 of size (num_constraints, nvar), where num_constraints is the number of constraints and nvar is the number of variables."))
+    end
+end
+
+"""
+    validate_code(code::Symbol)
+
+Validates the `exitCode` to ensure it is a valid symbol from the predefined list of exit codes.
+
+# Arguments
+
+- `code`: The exit code symbol to validate.
+
+# Throws
+
+- `ArgumentError` if the `code` is not in the predefined list `ExitCode`.
+"""
+function validate_code(code::Symbol)
+    if !(code in ExitCode)
+        throw(ArgumentError("Invalid exit code: `$code`. Must be one of: $ExitCode."))
+    end
+end
+
+"""
+    objective_setter_fallback(objective::Any)
+
+Validates that the provided objective function is callable (i.e., a function). 
+If the input is not a callable function, an error is raised.
+
+# Arguments
+
+- `objective`: The object to validate as an objective function.
+
+# Throws
+
+- `ArgumentError` if the `objective` is not a callable function.
+"""
+function objective_setter_fallback(objective::Any)
+    if !isfunction(objective)
+        throw(ArgumentError("The objective must be a callable function."))
+    end
+end
+
+"""
+    solver_settings_fallback(solver_settings::Any)
+
+Validates that the solver settings are of type `SEQUOIA_Settings`.
+
+# Arguments
+
+- `solver_settings`: The solver settings to validate.
+
+# Throws
+
+- `ArgumentError` if `solver_settings` is not of type `SEQUOIA_Settings`.
+"""
+function solver_settings_fallback(solver_settings::Any)
+    if !(solver_settings isa SEQUOIA_Settings)
+        throw(ArgumentError("`solver_settings` must be of type `SEQUOIA_Settings`."))
     end
 end

@@ -1,8 +1,13 @@
 using CUTEst
 
-export SEQUOIA_pb, 
-       set_objective!, set_gradient!, set_constraints!, set_jacobian!, set_bounds!, 
-       set_initial_guess!, set_solver_settings!, set_feasibility!, reset_solution_history!
+export SEQUOIA_pb,
+       set_initial_guess!,
+       set_objective!,
+       set_constraints!,
+       set_solver_settings!,
+       update_exit_code!,
+       reset_solution_history!
+
 
 ExitCode = [
     :NotCalled,                # Problem not yet optimized
@@ -16,357 +21,158 @@ ExitCode = [
 """
     SEQUOIA_pb
 
-The `SEQUOIA_pb` struct defines an optimization problem to be solved using the SEQUOIA_pb optimization method. It includes fields for the problem's dimension, objective function, constraints, initial guess, and solver settings.
+The `SEQUOIA_pb` struct defines an optimization problem to be solved using SEQUOIA. It includes fields for the problem dimension (`nvar`), the objective function, constraints, bounds, solver settings, and solution history.
 
 # Fields
 
-- `nvar::Int`: Number of variables (problem dimension).
-- `objective::Function`: Cost function to be minimized or maximized. It must be a function that takes a vector of variables and returns a scalar.
-- `gradient::Union{Nothing, Function}`: Gradient of the objective function (optional). Defaults to `nothing`.
-- `constraints::Union{Nothing, Function}`: Function returning a vector of constraints (optional). Defaults to `nothing`.
-- `jacobian::Union{Nothing, Function}`: Jacobian of the constraints (optional). Defaults to `nothing`.
-- `l_bounds::Union{Nothing, Vector{Float64}}`: Lower bounds for the constraints (optional). Defaults to `nothing`.
-- `u_bounds::Union{Nothing, Vector{Float64}}`: Upper bounds for the constraints (optional). Defaults to `nothing`.
-- `eqcon::Vector{Int}`: Indices of equality constraints, assumes constraints are of the form `c_i(x) = 0`. Defaults to an empty vector.
-- `ineqcon::Vector{Int}`: Indices of inequality constraints, assumes constraints are of the form `c_i(x) ≤ 0`. Defaults to an empty vector.
-- `is_minimization::Bool`: Whether the problem is a minimization problem (`true`) or a maximization problem (`false`). Defaults to `true`.
-- `is_feasibility::Bool`: Whether the problem is only looking for feasibility (`true`) or optimizing the objective function (`false`). Defaults to `false`.
-- `x0::Vector{Float64}`: Initial guess for the variables. Defaults to an empty vector.
-- `p::Vector{Float64}`: Parameters for various optimization methods, such as Lagrange multipliers or penalty parameters (optional). Defaults to an empty vector.
-- `solver_settings::SEQUOIA_Settings`: Settings for the solver, including the inner solver method and convergence tolerances.
-- `solution::SEQUOIA_Solution_step`: Stores solution data for the current step of the optimization.
-- `solution_history::SEQUOIA_Iterates`: Stores the history of all solution iterations.
-- `exitCode::ExitCode`: Indicates the termination status of the solver. It can be `NotCalled`, `OptimalityReached`, `Infeasibility`, `MaxIterations`, `Unbounded`, or `SolverError`. Defaults to `ExitCode.NotCalled`.
-- `cutest_nlp::Union{Nothing, CUTEstModel}`: Optional field for the CUTEst model handle. Defaults to `nothing`.
-
-# Example
-
-```julia
-using SEQUOIA_pb
-
-# Define the cost function
-objective_fn = x -> sum(x.^2)
-
-# Define solver settings
-settings = SEQUOIA_Settings(inner_solver=BFGS(), max_iter=1000, resid_tolerance=1e-6)
-
-# Initialize the SEQUOIA_pb problem
-problem = SEQUOIA_pb(nvar=2, objective=objective_fn, solver_settings=settings)
-
-# Output: SEQUOIA_pb object with the defined problem
+- `nvar::Int`: The number of variables in the optimization problem (problem dimension).
+- `x0::Vector{Float64}`: Initial guess for the variables, defaulting to a zero vector of size `nvar`.
+- `is_minimization::Bool`: A flag indicating whether the problem is a minimization problem (`true`) or a maximization problem (`false`). Defaults to `true` (minimization).
+- `objective::Union{Nothing, Function}`: The objective function to be minimized or maximized. Defaults to `nothing`.
+- `gradient::Union{Nothing, Function}`: The gradient of the objective function. Defaults to `nothing`.
+- `constraints::Union{Nothing, Function}`: A function returning a vector of constraints. Defaults to `nothing`.
+- `jacobian::Union{Nothing, Function}`: The Jacobian of the constraints. Defaults to `nothing`.
+- `eqcon::Union{Nothing, Vector{Int}}`: Indices of equality constraints, assuming `c_i(x) = 0`. Defaults to an empty vector.
+- `ineqcon::Union{Nothing, Vector{Int}}`: Indices of inequality constraints, assuming `c_i(x) ≤ 0`. Defaults to an empty vector.
+- `solver_settings::SEQUOIA_Settings`: Settings for the optimization solver, including the algorithm to use and tolerance levels. Defaults to a pre-defined set of settings.
+- `solution_history::SEQUOIA_History`: Stores the history of all solution iterations. Defaults to an empty `SEQUOIA_History` object.
+- `exitCode::Symbol`: The termination status of the solver, defaulting to `:NotCalled`.
+- `cutest_nlp::Union{Nothing, CUTEst.CUTEstModel}`: An optional field to store a handle to a CUTEst model, used for interfacing with external solvers or benchmarks. Defaults to `nothing`.
 """
-mutable struct SEQUOIA_pb # Sequoia problem definition struct 
-    nvar::Int                                                                   # Problem dimension (number of variables)
-
-    objective::Function                                                         # Cost function to be minimized or maximized
-    gradient::Union{Nothing, Function}                                          # Gradient of the objective
-
-    constraints::Union{Nothing, Function}                                       # Function returning a vector of constraints
-    jacobian::Union{Nothing, Function}                                          # Jacobian of constraints
-    l_bounds::Union{Nothing, Vector{Float64}}                                   # Lower bounds for the constraints
-    u_bounds::Union{Nothing, Vector{Float64}}                                   # Upper bounds for the constraints
-    eqcon::Vector{Int}                                                          # Indices of equality constraints. Assumes c_i(x)=0
-    ineqcon::Vector{Int}                                                        # Indices of inequality constraints. Assumes c_i(x)≤0
-
-    is_minimization::Bool                                                       # True for minimization, false for maximization
-    is_feasibility::Bool                                                        # True for feasibility problem
-
-    x0::Vector{Float64}                                                         # Initial guess for the variables
+mutable struct SEQUOIA_pb
+    nvar::Int
+    x0::Vector{Float64}
     
-    solver_settings::SEQUOIA_Settings                                           # Solver settings
-    solution::SEQUOIA_Solution_step                                             # Store solution data regarding current step
-    solution_history::SEQUOIA_History                                           # Store solution history 
-    exitCode::Symbol                                                            # Termination status
+    is_minimization::Bool
+    objective::Union{Nothing, Function}
+    gradient::Union{Nothing, Function}
 
-    cutest_nlp::Union{Nothing, CUTEst.CUTEstModel}                              # CUTEst model handle - Optional 
+    constraints::Union{Nothing, Function}
+    jacobian::Union{Nothing, Function}
+    eqcon::Union{Nothing, Vector{Int}}
+    ineqcon::Union{Nothing, Vector{Int}}
+
+    solver_settings::SEQUOIA_Settings
+    solution_history::SEQUOIA_History
+    exitCode::Symbol
+
+    cutest_nlp::Union{Nothing, CUTEst.CUTEstModel}
 
     """
-    SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings)
+    # Constructor
 
-    Construct a `SEQUOIA_pb` problem with the required fields: `nvar` (number of variables), `objective` (cost function), and `solver_settings`. This version assumes no constraints or bounds.
+    The `SEQUOIA_pb` constructor requires only the number of variables `nvar`, and provides default values for all other fields. It allows the creation of an optimization problem with varying levels of complexity, from a simple unconstrained optimization to a more complex problem with constraints and a defined solver setup.
 
     # Arguments
-    - `nvar::Int`: The number of variables in the optimization problem.
-    - `objective::Function`: The objective function to be minimized or maximized.
-    - `solver_settings::SEQUOIA_Settings`: The solver settings, including algorithms and convergence criteria.
 
-    # Example
-
-    ```julia
-    objective_fn = x -> sum(x.^2)
-    settings = SEQUOIA_Settings(inner_solver=BFGS(), max_iter=1000)
-
-    problem = SEQUOIA_pb(2, objective_fn, settings)
+    - `nvar::Int`: The number of variables in the problem (required).
+    - `x0::Vector{Float64}`: Initial guess for the variables. Defaults to a zero vector of size `nvar`.
+    - `is_minimization::Bool`: A flag for minimization (`true`) or maximization (`false`). Defaults to `true`.
+    - `objective::Union{Nothing, Function}`: The objective function for the problem. Defaults to `nothing`.
+    - `gradient::Union{Nothing, Function}`: The gradient of the objective function. Defaults to `nothing`.
+    - `constraints::Union{Nothing, Function}`: A function returning the vector of constraints. Defaults to `nothing`.
+    - `jacobian::Union{Nothing, Function}`: The Jacobian matrix of the constraints. Defaults to `nothing`.
+    - `eqcon::Union{Nothing, Vector{Int}}`: Indices of equality constraints. Defaults to an empty vector.
+    - `ineqcon::Union{Nothing, Vector{Int}}`: Indices of inequality constraints. Defaults to an empty vector.
+    - `solver_settings::SEQUOIA_Settings`: The settings for the solver. Defaults to `SEQUOIA_Settings(:QPM,:LBFGS,false,10^-6,1000,300)`.
+    - `solution_history::SEQUOIA_History`: The history of solution steps. Defaults to an empty `SEQUOIA_History`.
+    - `exitCode::Symbol`: The termination status of the solver. Defaults to `:NotCalled`.
+    - `cutest_nlp::Union{Nothing, CUTEst.CUTEstModel}`: Optional CUTEst model handle. Defaults to `nothing`.
     """
-    function SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings)
-        # Validate inputs
-        validate_nvar(nvar)
-        validate_objective(objective)
-        validate_solver_settings(solver_settings)
+    function SEQUOIA_pb(nvar::Int; 
+                        x0::Vector{Float64} = zeros(nvar),
+                        is_minimization::Bool = true,
+                        objective::Union{Nothing, Function} = nothing,
+                        gradient::Union{Nothing, Function} = nothing,
+                        constraints::Union{Nothing, Function} = nothing,
+                        jacobian::Union{Nothing, Function} = nothing,
+                        eqcon::Union{Nothing, Vector{Int}} = Int[],
+                        ineqcon::Union{Nothing, Vector{Int}} = Int[],
+                        solver_settings::SEQUOIA_Settings = SEQUOIA_Settings(:QPM,:LBFGS,false,10^-6,1000,300),
+                        solution_history::SEQUOIA_History = SEQUOIA_History(),
+                        exitCode::Symbol = :NotCalled,
+                        cutest_nlp::Union{Nothing, CUTEst.CUTEstModel} = nothing)
         
-        # Default initial guess `x0` and validate it
-        x0 = zeros(nvar)
-        validate_x0(x0, nvar)
-    
-        return SEQUOIA_pb(nvar, objective, nothing, nothing, nothing, nothing, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
+        return new(nvar, x0, is_minimization, objective, gradient, constraints, jacobian,
+                   eqcon, ineqcon, solver_settings, solution_history, exitCode, cutest_nlp)
     end
-    
-
-    """
-    SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, constraints::Function)
-
-    Construct a `SEQUOIA_pb` problem with the objective function and constraints. No bounds are assumed in this constructor.
-
-    # Arguments
-    - `nvar::Int`: The number of variables in the problem.
-    - `objective::Function`: The objective function to be minimized or maximized.
-    - `solver_settings::SEQUOIA_Settings`: The solver settings, including algorithms and tolerances.
-    - `constraints::Function`: A function that returns a vector of constraints.
-
-    # Example
-
-    ```julia
-    objective_fn = x -> sum(x.^2)
-    constraints_fn = x -> [x[1] + x[2] - 1.0]
-
-    settings = SEQUOIA_Settings(inner_solver=BFGS(), max_iter=1000)
-
-    problem = SEQUOIA_pb(2, objective_fn, settings, constraints_fn)
-    """
-    function SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, constraints::Function)
-        # Validate inputs
-        validate_nvar(nvar)
-        validate_objective(objective)
-        validate_solver_settings(solver_settings)
-        validate_constraints(constraints)
-    
-        # Default initial guess `x0` and solver step/iterate values
-        x0 = zeros(nvar)
-        validate_x0(x0, nvar)
-    
-        return SEQUOIA_pb(nvar, objective, nothing, constraints, nothing, nothing, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
-    end
-    
-
-    """
-    SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, l_bounds::Vector{Float64}, u_bounds::Vector{Float64})
-
-    Construct a `SEQUOIA_pb` problem with lower and upper bounds for the constraints.
-
-    # Arguments
-    - `nvar::Int`: The number of variables in the problem.
-    - `objective::Function`: The objective function to be minimized or maximized.
-    - `solver_settings::SEQUOIA_Settings`: The solver settings, including algorithms and tolerances.
-    - `l_bounds::Vector{Float64}`: A vector of lower bounds for the constraints.
-    - `u_bounds::Vector{Float64}`: A vector of upper bounds for the constraints.
-
-    # Example
-
-    ```julia
-    objective_fn = x -> sum(x.^2)
-    bounds = ([-1.0, -1.0], [1.0, 1.0])
-
-    settings = SEQUOIA_Settings(inner_solver=BFGS(), max_iter=1000)
-
-    problem = SEQUOIA_pb(2, objective_fn, settings, bounds)
-    """
-    function SEQUOIA_pb(nvar::Int, objective::Function, solver_settings::SEQUOIA_Settings, bounds::Tuple{Vector{Float64}, Vector{Float64}})
-        # Validate inputs
-        validate_nvar(nvar)
-        validate_objective(objective)
-        validate_solver_settings(solver_settings)
-        validate_bounds(bounds, nvar)
-        
-        # Default initial guess `x0` and solver step/iterate values
-        x0 = zeros(nvar)
-        validate_x0(x0, nvar)
-    
-        return SEQUOIA_pb(nvar, objective, nothing, nothing, l_bounds, u_bounds, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
-    end
-
-    """
-    SEQUOIA_pb(nvar::Int, objective::Function)
-
-    Construct a `SEQUOIA_pb` problem with the default solver settings.
-
-    # Arguments
-    - `nvar::Int`: The number of variables in the problem.
-    - `objective::Function`: The objective function to be minimized or maximized.
-
-    # Example
-
-    ```julia
-    objective_fn = x -> sum(x.^2)
-
-    problem = SEQUOIA_pb(2, objective_fn)
-    """
-    function SEQUOIA_pb(nvar::Int, objective::Function)
-        # Validate inputs
-        validate_nvar(nvar)
-        validate_objective(objective)
-    
-        default_settings = SEQUOIA_Settings(inner_solver=BFGS(), max_iter=1000, max_time=Inf, resid_tolerance=1e-6, cost_tolerance=1e-2, cost_min=-1e10, outer_method=SEQUOIA(), feasibility=false)
-        
-        # Default initial guess `x0` and solver step/iterate values
-        x0 = zeros(nvar)
-        validate_x0(x0, nvar)
-    
-        return SEQUOIA_pb(nvar, objective, nothing, nothing, nothing, nothing, Int[], Int[], true, false, x0, Float64[], solver_settings, SEQUOIA_Solution_step(), SEQUOIA_Iterates(), ExitCode.NotCalled, nothing)
-    end
-    
-
 end
 
 ###############################################################
-## Validation functions
+## Setter functions
 ###############################################################
-
-# Check that nvar is a positive integer
-function validate_nvar(nvar::Int)
-    if nvar <= 0
-        throw(ArgumentError("The number of variables `nvar` must be a positive integer. Given: $nvar"))
-    end
-end
-
-# Check that the objective function is callable
-function validate_objective(objective::Function)
-    if !isa(objective, Function)
-        throw(ArgumentError("The `objective` must be a callable function."))
-    end
-end
-
-# Check that gradient, if provided, is a callable function
-function validate_gradient(gradient::Union{Nothing, Function})
-    if gradient !== nothing && !isa(gradient, Function)
-        throw(ArgumentError("The `gradient`, if provided, must be a callable function."))
-    end
-end
-
-# Check that constraints, if provided, are a callable function
-function validate_constraints(constraints::Union{Nothing, Function})
-    if constraints !== nothing && !isa(constraints, Function)
-        throw(ArgumentError("The `constraints`, if provided, must be a callable function."))
-    end
-end
-
-# Check that jacobian, if provided, is a callable function
-function validate_jacobian(jacobian::Union{Nothing, Function})
-    if jacobian !== nothing && !isa(jacobian, Function)
-        throw(ArgumentError("The `jacobian`, if provided, must be a callable function."))
-    end
-end
-
-#Validates that the lower and upper bounds are consistent. Both bounds must be vectors of the same length as `nvar`.
-function validate_bounds(l_bounds::Union{Nothing, Vector{Float64}}, u_bounds::Union{Nothing, Vector{Float64}}, nvar::Int)
-    if l_bounds !== nothing && u_bounds !== nothing
-        if length(l_bounds) != nvar || length(u_bounds) != nvar
-            throw(ArgumentError("The lower and upper bounds must have the same length as the number of variables `nvar`. Expected length: $nvar."))
-        end
-    end
-end
-
-# Validate initial guess `x0`: must be a vector of the same length as `nvar`
-function validate_x0(x0::Vector{Float64}, nvar::Int)
-    if length(x0) != nvar
-        throw(ArgumentError("The initial guess `x0` must be a vector of length `nvar`. Expected length: $nvar, but got: $(length(x0))"))
-    end
-end
-
-# Validate that solver settings are of type SEQUOIA_Settings
-function validate_solver_settings(solver_settings::SEQUOIA_Settings)
-    if !isa(solver_settings, SEQUOIA_Settings)
-        throw(ArgumentError("Invalid `solver_settings` provided. It must be of type `SEQUOIA_Settings`."))
-    end
-end
-
-"""
-    set_objective!(pb::SEQUOIA_pb, obj::Function)
-
-Sets the objective function of the SEQUOIA_pb problem.
-
-# Arguments
-- `pb`: The SEQUOIA_pb problem instance.
-- `obj`: The new objective function to be set.
-"""
-function set_objective!(pb::SEQUOIA_pb, obj::Function)
-    validate_objective(obj)  # Ensure the new objective function is valid
-    pb.objective = obj
-    # Optionally reset some related fields or history
-    pb.gradient = nothing  # Reset gradient if new objective is set
-    pb.solution_history = SEQUOIA_Iterates()  # Clear solution history
-end
-
-"""
-    set_gradient!(pb::SEQUOIA_pb, grad::Function)
-
-Sets the gradient of the objective function for the SEQUOIA_pb problem.
-
-# Arguments
-- `pb`: The SEQUOIA_pb problem instance.
-- `grad`: The gradient function to be set.
-"""
-function set_gradient!(pb::SEQUOIA_pb, grad::Function)
-    validate_gradient(grad)
-    pb.gradient = grad
-end
-
-"""
-    set_constraints!(pb::SEQUOIA_pb, constraints::Function)
-
-Sets the constraints for the SEQUOIA_pb problem.
-
-# Arguments
-- `pb`: The SEQUOIA_pb problem instance.
-- `constraints`: The new constraints function to be set.
-"""
-function set_constraints!(pb::SEQUOIA_pb, constraints::Function)
-    validate_constraints(constraints)
-    pb.constraints = constraints
-    pb.jacobian = nothing  # Reset jacobian if new constraints are set
-end
-
-"""
-    set_jacobian!(pb::SEQUOIA_pb, jacobian::Function)
-
-Sets the Jacobian of the constraints for the SEQUOIA_pb problem.
-
-# Arguments
-- `pb`: The SEQUOIA_pb problem instance.
-- `jacobian`: The new Jacobian function to be set.
-"""
-function set_jacobian!(pb::SEQUOIA_pb, jacobian::Function)
-    validate_jacobian(jacobian)
-    pb.jacobian = jacobian
-end
-
-"""
-    set_bounds!(pb::SEQUOIA_pb, l_bounds::Vector{Float64}, u_bounds::Vector{Float64})
-
-Sets the lower and upper bounds for the SEQUOIA_pb problem.
-
-# Arguments
-- `pb`: The SEQUOIA_pb problem instance.
-- `l_bounds`: A vector of lower bounds for the constraints.
-- `u_bounds`: A vector of upper bounds for the constraints.
-"""
-function set_bounds!(pb::SEQUOIA_pb, l_bounds::Vector{Float64}, u_bounds::Vector{Float64})
-    validate_bounds(l_bounds, u_bounds, pb.nvar)  # Ensure bounds are valid
-    pb.l_bounds = l_bounds
-    pb.u_bounds = u_bounds
-end
 
 """
     set_initial_guess!(pb::SEQUOIA_pb, x0::Vector{Float64})
 
-Sets the initial guess for the SEQUOIA_pb problem.
+Sets the initial guess (`x0`) for the SEQUOIA_pb problem. This function validates the input
+to ensure the length of `x0` matches the problem dimension (`nvar`).
 
 # Arguments
-- `pb`: The SEQUOIA_pb problem instance.
-- `x0`: The new initial guess vector.
+- `pb`: The `SEQUOIA_pb` problem instance.
+- `x0`: The new initial guess vector. Must have a length equal to `pb.nvar`.
+
+# Throws
+- `ArgumentError`: If the length of `x0` does not match `pb.nvar`.
 """
 function set_initial_guess!(pb::SEQUOIA_pb, x0::Vector{Float64})
     validate_x0(x0, pb.nvar)
     pb.x0 = x0
+end
+
+"""
+    set_objective!(pb::SEQUOIA_pb, obj::Function; gradient::Union{Nothing, Function}=nothing, reset_history::Bool=true)
+
+Sets the objective function for the SEQUOIA_pb problem and optionally resets the solution history.
+You can also provide a gradient, otherwise, the gradient will be generated automatically.
+
+# Arguments
+- `pb`: The `SEQUOIA_pb` problem instance.
+- `obj`: The new objective function, which must return a scalar value.
+- `gradient`: (Optional) The gradient function. If not provided, it will be auto-generated using automatic differentiation.
+- `reset_history`: (Optional) A boolean flag indicating whether to reset the solution history. Defaults to `true`.
+
+# Throws
+- `ArgumentError`: If the objective function is not callable or its output is not a scalar.
+"""
+function set_objective!(pb::SEQUOIA_pb, obj::Function; gradient::Union{Nothing, Function}=nothing, reset_history::Bool = true)
+    validate_objective(obj,pb.x0)
+    pb.objective = obj
+    
+    pb.gradient = gradient
+    validate_gradient!(pb)
+
+    if reset_history
+        pb.solution_history = SEQUOIA_History()
+    end 
+end
+
+"""
+    set_constraints!(pb::SEQUOIA_pb, constraints::Function, eqcon::Union{Nothing, Vector{Int}}, ineqcon::Union{Nothing, Vector{Int}}; jacobian::Union{Nothing, Function}=nothing, reset_history::Bool=true)
+
+Sets the constraints and optional Jacobian for the SEQUOIA_pb problem. You can also specify equality and inequality constraint indices. Optionally resets the solution history.
+
+# Arguments
+- `pb`: The `SEQUOIA_pb` problem instance.
+- `constraints`: The new constraints function, which must return a vector of constraints.
+- `eqcon`: A vector of indices corresponding to equality constraints (i.e., `c_i(x) = 0`). Defaults to `nothing`.
+- `ineqcon`: A vector of indices corresponding to inequality constraints (i.e., `c_i(x) ≤ 0`). Defaults to `nothing`.
+- `jacobian`: (Optional) The Jacobian function. If not provided, it will be auto-generated using automatic differentiation.
+- `reset_history`: (Optional) A boolean flag indicating whether to reset the solution history. Defaults to `true`.
+
+# Throws
+- `ArgumentError`: If the constraints are not callable or their dimensions do not match the provided indices.
+"""
+function set_constraints!(pb::SEQUOIA_pb, constraints::Function, eqcon::Union{Nothing, Vector{Int}}, ineqcon::Union{Nothing, Vector{Int}}; jacobian::Union{Nothing, Function}=nothing, reset_history::Bool = true)
+    pb.constraints = constraints
+    pb.jacobian = jacobian
+    pb.eqcon = eqcon
+    pb.ineqcon = ineqcon
+    validate_constraints!(pb)
+
+    if reset_history
+        pb.solution_history = SEQUOIA_History()
+    end
 end
 
 """
@@ -375,35 +181,37 @@ end
 Sets the solver settings for the SEQUOIA_pb problem.
 
 # Arguments
-- `pb`: The SEQUOIA_pb problem instance.
-- `settings`: The new solver settings.
+- `pb`: The `SEQUOIA_pb` problem instance.
+- `settings`: The new solver settings (`SEQUOIA_Settings`).
 """
 function set_solver_settings!(pb::SEQUOIA_pb, settings::SEQUOIA_Settings)
-    validate_solver_settings(settings)
     pb.solver_settings = settings
 end
 
 """
-    set_feasibility!(pb::SEQUOIA_pb, is_feasibility::Bool)
+    update_exit_code!(pb::SEQUOIA_pb, code::Symbol)
 
-Sets whether the SEQUOIA_pb problem is a feasibility problem.
+Updates the `exitCode` field of the SEQUOIA_pb problem. This function validates that the exit code is one of the predefined, accepted codes.
 
 # Arguments
-- `pb`: The SEQUOIA_pb problem instance.
-- `is_feasibility`: Whether the problem should focus only on feasibility (`true`) or optimization (`false`).
+- `pb`: The `SEQUOIA_pb` problem instance.
+- `code`: The new exit code. Must be one of `:NotCalled`, `:OptimalityReached`, `:Infeasibility`, `:MaxIterations`, `:Unbounded`, `:SolverError`.
+
+# Throws
+- `ArgumentError`: If the `code` is not a valid exit code.
 """
-function set_feasibility!(pb::SEQUOIA_pb, is_feasibility::Bool)
-    pb.is_feasibility = is_feasibility
-    pb.solution_history = SEQUOIA_Iterates()  # Reset solution history
+function update_exit_code!(pb::SEQUOIA_pb, code::Symbol)
+    validate_code(code)
+    pb.exitCode = code
 end
 
 """
     reset_solution_history!(pb::SEQUOIA_pb)
 
-Resets the solution history of the SEQUOIA_pb problem.
+Resets the solution history for the SEQUOIA_pb problem.
 
 # Arguments
-- `pb`: The SEQUOIA_pb problem instance.
+- `pb`: The `SEQUOIA_pb` problem instance.
 """
 function reset_solution_history!(pb::SEQUOIA_pb)
     pb.solution_history = SEQUOIA_Iterates()
