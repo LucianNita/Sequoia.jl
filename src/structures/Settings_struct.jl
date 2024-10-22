@@ -1,168 +1,160 @@
 export SEQUOIA_Settings
 
-@enum InnerSolverEnum LBFGS BFGS Newton GradientDescent NelderMead
-@enum OuterMethodEnum SEQUOIA QPM AugLag IntPt
+# List of valid inner solvers
+inner_solvers = [:LBFGS, :BFGS, :Newton, :GradientDescent, :NelderMead]
 
-# Define different convergence criteria methods
-@enum ConvCrit begin
-    GradientNorm        # Convergence based on gradient norm
-    MaxIterations       # Convergence based on maximum number of iterations
-    MaxTime             # Convergence based on maximum computational time
-    ConstraintResidual  # Convergence based on constraint residual - relevant for feasibility
-    NormMaxIt           # Combined criterion: either gradient norm below tolerance or number of iterations exceeded
-    MaxItMaxTime        # Combined criterion: either number of iterations exceeded or maximum time exceeded
-    NormMaxTime         # Combined criterion: either gradient norm below tolerance or maximum time exceeded
-    CombinedCrit        # Combined criterion: either gradient norm below tolerance or number of iterations exceeded or maximum time exceeded
-    AdaptiveIterations  # Adaptive number of inner iterations based on outer iteration count
-end
+# List of valid outer methods
+outer_methods = [:SEQUOIA, :QPM, :AugLag, :IntPt]
+
+# List of valid convergence criteria
+convergence_criterias = [
+    :GradientNorm,       # Convergence based on gradient norm
+    :MaxIterations,      # Convergence based on max number of iterations
+    :MaxTime,            # Convergence based on max computational time
+    :ConstraintResidual, # Convergence based on constraint residual (relevant for feasibility)
+    :NormMaxIt,          # Combined: gradient norm below tolerance OR iterations exceeded
+    :MaxItMaxTime,       # Combined: iterations exceeded OR max time exceeded
+    :NormMaxTime,        # Combined: gradient norm below tolerance OR max time exceeded
+    :CombinedCrit,       # Combined: gradient norm below tolerance OR iterations OR max time
+    :AdaptiveIterations  # Adaptive inner iterations based on outer iteration count
+]
 
 """
     SEQUOIA_Settings
 
-The `SEQUOIA_Settings` struct stores the key settings required for solving optimization problems using the SEQUOIA method. It allows configuration of inner and outer solvers, convergence criteria, and various numerical tolerances.
+The `SEQUOIA_Settings` struct stores the key settings required for solving optimization problems using the SEQUOIA method. It allows configuring various solvers, convergence criteria, and numerical settings.
 
 # Fields
 
-- `outer_method::OuterMethodEnum`: Specifies the outer optimization method. Valid options include:
-    - `:SEQUOIA`, `:QPM`, `:AugLag`, `:IntPt` (symbols or equivalent strings are accepted).
-  
-- `inner_solver::InnerSolverEnum`: Specifies the inner solver used to solve unconstrained subproblems. Valid options include:
-    - `:LBFGS`, `:BFGS`, `:Newton`, `:GradientDescent`, `:NelderMead` (symbols or equivalent strings are accepted).
+- `outer_method::Symbol`: Specifies the outer optimization method. Valid options include:
+    - `:SEQUOIA`: SEQUOIA method.
+    - `:QPM`: Quadratic Programming Method.
+    - `:AugLag`: Augmented Lagrangian Method.
+    - `:IntPt`: Interior Point Method.
 
-- `feasibility::Bool`: Determines if the solver is solving a feasibility problem (i.e., ensuring constraints are satisfied) or optimizing an objective function.
+- `inner_solver::Symbol`: Specifies the inner solver used to solve unconstrained subproblems. Valid options include:
+    - `:LBFGS`: Limited-memory BFGS.
+    - `:BFGS`: BFGS solver.
+    - `:Newton`: Newton’s method.
+    - `:GradientDescent`: Gradient Descent method.
+    - `:NelderMead`: Nelder-Mead method.
 
-- `resid_tolerance::Real`: Residual tolerance for constraints. The solver considers the constraints satisfied when the residual is below this value. Must be a positive number.
+- `feasibility::Bool`: Determines if the solver is solving a feasibility problem (true) or optimizing an objective function (false).
 
-- `max_iter_outer::Int`: Maximum number of iterations allowed for the outer solver. Must be a positive integer.
+- `resid_tolerance::Real`: Residual tolerance for constraints. The solver considers the constraints satisfied when the residual is below this value.
 
-- `max_time_outer::Real`: Maximum computational time (in seconds) for the entire optimization process. Set to `Inf` for no time limit. Must be non-negative.
+- `max_iter_outer::Int`: Maximum number of iterations allowed for the outer solver.
 
-- `conv_crit::ConvCrit`: Specifies the convergence criterion for the inner solver. Valid options include:
-    - `:GradientNorm`, `:MaxIterations`, `:MaxTime`, `:ConstraintResidual`, etc. (symbols or equivalent strings are accepted).
+- `max_time_outer::Real`: Maximum computational time (in seconds) for the entire optimization process.
 
-- `max_iter_inner::Union{Nothing, Int}`: Maximum number of iterations for the inner solver. If `nothing`, the default behavior of the inner solver is used.
+- `conv_crit::Symbol`: Convergence criterion for the inner solver. Valid options include:
+    - `:GradientNorm`: Based on the gradient norm.
+    - `:MaxIterations`: Based on a maximum number of iterations.
+    - `:MaxTime`: Based on maximum computational time.
+    - `:ConstraintResidual`: Based on constraint residuals.
+    - `:NormMaxIt`: Either gradient norm below tolerance or iterations exceeded.
+    - `:MaxItMaxTime`: Either number of iterations exceeded or maximum time exceeded.
+    - `:NormMaxTime`: Either gradient norm below tolerance or maximum time exceeded.
+    - `:CombinedCrit`: A combination of gradient norm, number of iterations, or maximum time exceeded.
+    - `:AdaptiveIterations`: Adaptive inner iterations based on outer iteration count.
 
-- `max_time_inner::Union{Nothing, Real}`: Maximum time (in seconds) for each inner solve call. Set to `nothing` for no limit or a positive real number to impose a time limit.
+- `max_iter_inner::Union{Nothing, Int}`: Maximum number of iterations for the inner solver. `Nothing` indicates that the default behavior of the inner solver is used.
 
-- `cost_tolerance::Union{Nothing, Real}`: Desired optimality gap. The solver stops when the difference between the current solution and the optimal cost is below this threshold. Must be positive if specified, or `nothing` for no specific cost tolerance.
+- `max_time_inner::Union{Nothing, Real}`: Maximum time (in seconds) for each inner solve call. `Nothing` for no limit or a positive real number to impose a time limit.
 
-- `cost_min::Union{Nothing, Real}`: Minimum allowed cost value. This helps detect unbounded problems. Can be set to `nothing` if not needed.
+- `cost_tolerance::Union{Nothing, Real}`: Desired optimality gap. The solver stops when the difference between the current solution and the optimal cost is below this threshold.
 
-- `solver_params::Union{Nothing, Vector{Float64}}`: Optional solver-related parameters, such as step sizes, penalty parameters, or Lagrange multipliers. Defaults to `nothing` if not specified.
+- `cost_min::Union{Nothing, Real}`: Minimum allowed cost value to help detect unbounded problems.
 
-# Constructors
-
-## Full Constructor
-Allows complete control over all fields of the `SEQUOIA_Settings` struct.
-
-```julia
-SEQUOIA_Settings(
-    outer_method::Union{Symbol, String},
-    inner_solver::Union{Symbol, String},
-    feasibility::Bool,
-    resid_tolerance::Real,
-    max_iter_outer::Int,
-    max_time_outer::Real,
-    conv_crit::Union{Symbol, String},
-    max_iter_inner::Union{Nothing, Int},
-    max_time_inner::Union{Nothing, Real},
-    cost_tolerance::Union{Nothing, Real},
-    cost_min::Union{Nothing, Real},
-    solver_params::Union{Nothing, Vector{Float64}} = nothing
-)
-
-# Full constructor example
-settings_full = SEQUOIA_Settings(
-    :QPM,
-    :LBFGS,
-    false,
-    1e-8,
-    1000,
-    3600.0,
-    :GradientNorm,
-    nothing,
-    nothing,
-    1e-4,
-    -1e6,
-    [1.0, 0.5]
-)
-
-# Minimal constructor example
-settings_min = SEQUOIA_Settings(
-    :QPM,
-    :LBFGS,
-    false,
-    1e-6,
-    1000,
-    3600.0
-)
+- `solver_params::Union{Nothing, Vector{Float64}}`: Optional solver-related parameters, such as step sizes, penalty parameters, or Lagrange multipliers.
 """
 mutable struct SEQUOIA_Settings
-    outer_method::OuterMethodEnum                   # Outer optimization method (SEQUOIA, QPM, AugLag, IntPt).
-    inner_solver::InnerSolverEnum                   # The inner solver used for unconstrained problems.
-    feasibility::Bool                               # Solve feasibility problem (true) or account for an objective (false)?
+    outer_method::Symbol               # Outer optimization method (:SEQUOIA, :QPM, :AugLag, :IntPt).
+    inner_solver::Symbol               # The inner solver used for unconstrained problems (:LBFGS, :BFGS, etc.).
+    feasibility::Bool                  # Solve feasibility problem (true) or account for an objective (false)?
     
-    resid_tolerance::Real                           # Residual tolerance for constraints.
-    max_iter_outer::Int                             # Maximum number of outer iterations allowed.
-    max_time_outer::Real                            # Maximum total computational time (in seconds).
+    resid_tolerance::Real              # Residual tolerance for constraints.
+    max_iter_outer::Int                # Maximum number of outer iterations allowed.
+    max_time_outer::Real               # Maximum total computational time (in seconds).
 
-    conv_crit::ConvCrit                             # Convergence criterion for the inner solve.
-    max_iter_inner::Union{Nothing, Int}             # Maximum number of inner iterations allowed.
-    max_time_inner::Union{Nothing, Real}            # Maximum computational time for each inner solve call (in seconds).
+    conv_crit::Symbol                  # Convergence criterion for the inner solve (:GradientNorm, etc.).
+    max_iter_inner::Union{Nothing, Int}# Maximum number of inner iterations allowed.
+    max_time_inner::Union{Nothing, Real}# Maximum computational time for each inner solve call (in seconds).
 
-    cost_tolerance::Union{Nothing, Real}            # Desired optimality gap.
-    cost_min::Union{Nothing, Real}                  # Minimum cost - useful for spotting possible unbounded problems.
+    cost_tolerance::Union{Nothing, Real}# Desired optimality gap.
+    cost_min::Union{Nothing, Real}      # Minimum cost - useful for spotting possible unbounded problems.
 
-    solver_params::Union{Nothing, Vector{Float64}}  # Optional solver-related parameters.
+    solver_params::Union{Nothing, Vector{Float64}}# Optional solver-related parameters.
 
-    # Full constructor with symbol/string support
-    function SEQUOIA_Settings(outer_method::Union{Symbol, String}, inner_solver::Union{Symbol, String}, feasibility::Bool, 
+    """
+    SEQUOIA_Settings(outer_method::Symbol, inner_solver::Symbol, feasibility::Bool, 
+                     resid_tolerance::Real, max_iter_outer::Int, max_time_outer::Real, 
+                     conv_crit::Symbol, max_iter_inner::Union{Nothing, Int}, 
+                     max_time_inner::Union{Nothing, Real}, cost_tolerance::Union{Nothing, Real}, 
+                     cost_min::Union{Nothing, Real}, solver_params::Union{Nothing, Vector{Float64}} = nothing)
+
+    Full constructor for `SEQUOIA_Settings`, allowing the specification of all parameters.
+
+    # Arguments
+    - `outer_method::Symbol`: The outer optimization method.
+    - `inner_solver::Symbol`: The inner solver used for unconstrained problems.
+    - `feasibility::Bool`: Indicates whether the solver solves a feasibility problem.
+    - `resid_tolerance::Real`: Residual tolerance for constraints.
+    - `max_iter_outer::Int`: Maximum number of outer iterations.
+    - `max_time_outer::Real`: Maximum computational time for the outer solver.
+    - `conv_crit::Symbol`: Convergence criterion for the inner solver.
+    - `max_iter_inner::Union{Nothing, Int}`: Maximum number of inner iterations, or `nothing` for default behavior.
+    - `max_time_inner::Union{Nothing, Real}`: Maximum time per inner solve, or `nothing` for no limit.
+    - `cost_tolerance::Union{Nothing, Real}`: Desired optimality gap, or `nothing`.
+    - `cost_min::Union{Nothing, Real}`: Minimum cost value to detect unbounded problems, or `nothing`.
+    - `solver_params::Union{Nothing, Vector{Float64}}`: Optional solver-related parameters (default: `nothing`).
+    """
+    function SEQUOIA_Settings(outer_method::Symbol, inner_solver::Symbol, feasibility::Bool, 
                               resid_tolerance::Real, max_iter_outer::Int, max_time_outer::Real, 
-                              conv_crit::Union{Symbol, String}, max_iter_inner::Union{Nothing, Int}, max_time_inner::Union{Nothing, Real}, 
+                              conv_crit::Symbol, max_iter_inner::Union{Nothing, Int}, max_time_inner::Union{Nothing, Real}, 
                               cost_tolerance::Union{Nothing, Real}, cost_min::Union{Nothing, Real}, 
                               solver_params::Union{Nothing, Vector{Float64}} = nothing)
-        return new(parse_outer_method(outer_method), parse_inner_solver(inner_solver), feasibility, 
-                   resid_tolerance, max_iter_outer, max_time_outer, 
-                   parse_convergence_criterion(conv_crit), max_iter_inner, max_time_inner, 
-                   cost_tolerance, cost_min, solver_params)
+        
+
+        # Create a new instance
+        settings = new(outer_method, inner_solver, feasibility, 
+                       resid_tolerance, max_iter_outer, max_time_outer, 
+                       conv_crit, max_iter_inner, max_time_inner, 
+                       cost_tolerance, cost_min, solver_params)
+        
+        # Call the validation function to apply defaults and check values
+        validate_sequoia_settings!(settings)
+        
+        return settings    
     end
 
-    # Minimal constructor with symbol/string support
-    function SEQUOIA_Settings(outer_method::Union{Symbol, String}, inner_solver::Union{Symbol, String}, feasibility::Bool, 
+    """
+    SEQUOIA_Settings(outer_method::Symbol, inner_solver::Symbol, feasibility::Bool, 
+                     resid_tolerance::Real, max_iter_outer::Int, max_time_outer::Real)
+
+    Minimal constructor for `SEQUOIA_Settings`. This version uses default values for some of the parameters, such as using `:GradientNorm` for `conv_crit` and `nothing` for `max_iter_inner`, `max_time_inner`, etc.
+
+    # Arguments
+    - `outer_method::Symbol`: The outer optimization method.
+    - `inner_solver::Symbol`: The inner solver used for unconstrained problems.
+    - `feasibility::Bool`: Indicates whether the solver solves a feasibility problem.
+    - `resid_tolerance::Real`: Residual tolerance for constraints.
+    - `max_iter_outer::Int`: Maximum number of outer iterations.
+    - `max_time_outer::Real`: Maximum computational time for the outer solver.
+    """
+    function SEQUOIA_Settings(outer_method::Symbol, inner_solver::Symbol, feasibility::Bool, 
                               resid_tolerance::Real, max_iter_outer::Int, max_time_outer::Real)
-        return new(parse_outer_method(outer_method), parse_inner_solver(inner_solver), feasibility, 
-                   resid_tolerance, max_iter_outer, max_time_outer, 
-                   ConvCrit.GradientNorm, nothing, nothing, nothing, nothing, nothing)
+        # Create a new instance with default values for the unspecified fields
+        settings = new(outer_method, inner_solver, feasibility, 
+                       resid_tolerance, max_iter_outer, max_time_outer, 
+                       :GradientNorm, nothing, nothing, nothing, nothing, nothing)
+
+        # Call the validation function to apply defaults and check values
+        validate_sequoia_settings!(settings)
+
+        return settings
     end
+
 end
 
-# Utility function to convert symbol or string to InnerSolverEnum
-function parse_inner_solver(solver::Union{Symbol, String})
-    solver_str = String(solver)
-    try
-        return InnerSolverEnum[solver_str]
-    catch
-        throw(ArgumentError("Invalid inner solver: $solver_str. Valid solvers are: LBFGS, BFGS, Newton, GradientDescent, NelderMead."))
-    end
-end
-
-# Utility function to convert symbol or string to OuterMethodEnum
-function parse_outer_method(method::Union{Symbol, String})
-    method_str = String(method)
-    try
-        return OuterMethodEnum[method_str]
-    catch
-        throw(ArgumentError("Invalid outer method: $method_str. Valid methods are: SEQUOIA, QPM, AugLag, IntPt."))
-    end
-end
-
-# Utility function to convert symbol or string to ConvCrit
-function parse_convergence_criterion(conv_crit::Union{Symbol, String})
-    conv_crit_str = String(conv_crit)
-    try
-        return ConvCrit[conv_crit_str]
-    catch
-        throw(ArgumentError("Invalid convergence criterion: $conv_crit_str. Valid criteria are: GradientNorm, MaxIterations, MaxTime, ConstraintResidual, NormMaxIt, MaxItMaxTime, NormMaxTime, CombinedCrit, AdaptiveIterations."))
-    end
-end
 

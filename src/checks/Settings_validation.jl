@@ -10,19 +10,43 @@ Validates the fields of a `SEQUOIA_Settings` instance, applying default values w
 - Mutates `settings` by applying default values if required.
 """
 function validate_sequoia_settings!(settings::SEQUOIA_Settings)
+    # Validate outer method, inner solver, and convergence criteria
     validate_outer_method(settings.outer_method)
     validate_inner_solver(settings.inner_solver)
-    validate_max_iter_outer(settings.max_iter_outer)
-    validate_max_time_outer(settings.max_time_outer)
+    validate_convergence_criteria(settings.conv_crit)
+    
+    # Validate numeric parameters such as iterations and times
+    validate_time_and_iterations!(settings)
+    
+    # Validate the residual tolerance and cost minimum
     validate_tolerance(settings.resid_tolerance, "resid_tolerance")
     validate_cost_min(settings.cost_min)
     
-    # Specific validations for inner iterations and time based on convergence criteria
+    # Apply specific validations for inner iterations and time based on convergence criteria
     settings.max_iter_inner = validate_max_iter_inner!(settings.max_iter_inner, settings.conv_crit)
     settings.max_time_inner = validate_max_time_inner!(settings.max_time_inner, settings.conv_crit)
 
-    # Ensure cost_tolerance and cost_min are set if SEQUOIA and not solving a feasibility problem
+    # Validate solver parameters
+    validate_solver_params!(settings)
+    
+    # Ensure cost_tolerance and cost_min are set correctly for SEQUOIA when solving non-feasibility problems
     validate_cost_tolerance_and_min_cost!(settings)
+end
+
+"""
+    validate_convergence_criteria(conv_crit::Symbol)
+
+Validates that the convergence criterion is one of the supported options. 
+Throws an ArgumentError if the convergence criterion is invalid.
+"""
+function validate_convergence_criteria(conv_crit::Symbol)
+    valid_convergence_criterias = [
+        :GradientNorm, :MaxIterations, :MaxTime, :ConstraintResidual, 
+        :NormMaxIt, :MaxItMaxTime, :NormMaxTime, :CombinedCrit, :AdaptiveIterations
+    ]
+    if !(conv_crit in valid_convergence_criterias)
+        throw(ArgumentError("Invalid convergence criterion: $conv_crit. Valid criteria are: $(join(valid_convergence_criterias, ", "))."))
+    end
 end
 
 """
@@ -31,7 +55,7 @@ end
 Ensures that cost tolerance and cost minimum are set appropriately when the outer method is SEQUOIA and feasibility is false.
 """
 function validate_cost_tolerance_and_min_cost!(settings::SEQUOIA_Settings)
-    if settings.outer_method == SEQUOIA && !settings.feasibility
+    if settings.outer_method == :SEQUOIA && !settings.feasibility
         if settings.cost_tolerance === nothing
             @warn "Cost tolerance is `nothing` for non-feasibility problem with SEQUOIA. Defaulting to 1e-4."
             settings.cost_tolerance = 1e-4
@@ -44,37 +68,14 @@ function validate_cost_tolerance_and_min_cost!(settings::SEQUOIA_Settings)
 end
 
 """
-    validate_convergence_criterion!(settings::SEQUOIA_Settings)
-
-Ensures that the settings for `max_iter_inner` and `max_time_inner` are appropriate for the selected convergence criterion.
-"""
-function validate_convergence_criterion!(settings::SEQUOIA_Settings)
-    # Handle maximum iterations-based convergence criteria
-    if settings.conv_crit in (MaxIterations, NormMaxIt, MaxItMaxTime, CombinedCrit, AdaptiveIterations)
-        if settings.max_iter_inner === nothing
-            @warn "Max iterations cannot be `nothing` for convergence criterion $(settings.conv_crit). Defaulting to 500."
-            settings.max_iter_inner = 500
-        end
-    end
-
-    # Handle time-based convergence criteria
-    if settings.conv_crit in (MaxTime, MaxItMaxTime, NormMaxTime, CombinedCrit)
-        if settings.max_time_inner === nothing
-            @warn "Max time cannot be `nothing` for convergence criterion $(settings.conv_crit). Defaulting to 60 seconds."
-            settings.max_time_inner = 60.0
-        end
-    end
-end
-
-"""
     validate_solver_params!(settings::SEQUOIA_Settings)
 
-Checks if `solver_params` is valid based on the selected `outer_method`.
+Checks if `solver_params` is valid based on the selected `outer_method`. It ensures that if solver parameters are present, they are a vector of Float64 values.
 """
 function validate_solver_params!(settings::SEQUOIA_Settings)
     if settings.solver_params !== nothing
         if !all(x -> x isa Float64, settings.solver_params)
-            error("Solver parameters must be a vector of Float64 values.")
+            throw(ArgumentError("Solver parameters must be a vector of Float64 values."))
         end
     end
 end
@@ -82,60 +83,60 @@ end
 """
     validate_time_and_iterations!(settings::SEQUOIA_Settings)
 
-Ensures that the provided time and iteration settings are positive and sensible.
+Ensures that the provided time and iteration settings are positive and sensible. If values are not valid (e.g., negative or zero for iterations), an error is thrown.
 """
 function validate_time_and_iterations!(settings::SEQUOIA_Settings)
     if settings.max_iter_outer <= 0
-        error("Maximum outer iterations must be a positive integer.")
+        throw(ArgumentError("Maximum outer iterations must be a positive integer."))
     end
 
     if settings.max_time_outer < 0
-        error("Maximum outer time must be non-negative.")
+        throw(ArgumentError("Maximum outer time must be non-negative."))
     end
 
     if settings.max_iter_inner !== nothing && settings.max_iter_inner <= 0
-        error("Maximum inner iterations must be a positive integer or `nothing`.")
+        throw(ArgumentError("Maximum inner iterations must be a positive integer or `nothing`."))
     end
 
     if settings.max_time_inner !== nothing && settings.max_time_inner < 0
-        error("Maximum inner time must be non-negative or `nothing`.")
+        throw(ArgumentError("Maximum inner time must be non-negative or `nothing`."))
     end
 
     if settings.resid_tolerance <= 0
-        error("Residual tolerance must be a positive number.")
+        throw(ArgumentError("Residual tolerance must be a positive number."))
     end
 
     if settings.cost_tolerance !== nothing && settings.cost_tolerance <= 0
-        error("Cost tolerance must be a positive number or `nothing`.")
+        throw(ArgumentError("Cost tolerance must be a positive number or `nothing`."))
     end
 end
 
 """
-    validate_inner_solver(inner_solver::InnerSolverEnum)
+    validate_inner_solver(inner_solver::Symbol)
 
-Validates that the inner solver is one of the supported options.
+Validates that the inner solver is one of the supported options. Throws an ArgumentError if the inner solver is invalid.
 """
-function validate_inner_solver(inner_solver::InnerSolverEnum)
-    if !(inner_solver in InnerSolverEnum)
-        throw(ArgumentError("Invalid inner solver: $inner_solver. Valid solvers are: LBFGS, BFGS, Newton, GradientDescent, NelderMead."))
+function validate_inner_solver(inner_solver::Symbol)
+    if !(inner_solver in inner_solvers)
+        throw(ArgumentError("Invalid inner solver: $inner_solver. Valid solvers are: $(join(inner_solvers, ", "))."))
     end
 end
 
 """
-    validate_outer_method(outer_method::OuterMethodEnum)
+    validate_outer_method(outer_method::Symbol)
 
-Validates that the outer method is one of the supported options.
+Validates that the outer method is one of the supported options. Throws an ArgumentError if the outer method is invalid.
 """
-function validate_outer_method(outer_method::OuterMethodEnum)
-    if !(outer_method in OuterMethodEnum)
-        throw(ArgumentError("Invalid outer method: $outer_method. Valid methods are: SEQUOIA, QPM, AugLag, IntPt."))
+function validate_outer_method(outer_method::Symbol)
+    if !(outer_method in outer_methods)
+        throw(ArgumentError("Invalid outer method: $outer_method. Valid methods are: $(join(outer_methods, ", "))."))
     end
 end
 
 """
     validate_tolerance(tolerance::Real, name::String)
 
-Validates that the tolerance is a positive real number.
+Validates that the tolerance is a positive real number. Throws an ArgumentError if the tolerance is not valid.
 """
 function validate_tolerance(tolerance::Real, name::String)
     if tolerance <= 0
@@ -146,7 +147,7 @@ end
 """
     validate_cost_min(cost_min::Union{Nothing, Real})
 
-Validates that `cost_min` is reasonable and not too low.
+Validates that `cost_min` is reasonable and not too low. If `cost_min` is provided and is unreasonably low, an error is thrown.
 """
 function validate_cost_min(cost_min::Union{Nothing, Real})
     if cost_min !== nothing && cost_min < -1e15
@@ -155,12 +156,12 @@ function validate_cost_min(cost_min::Union{Nothing, Real})
 end
 
 """
-    validate_max_iter_inner!(max_iter_inner::Union{Nothing, Int}, conv_crit::ConvCrit)
+    validate_max_iter_inner!(max_iter_inner::Union{Nothing, Int}, conv_crit::Symbol)
 
-Validates or defaults `max_iter_inner` based on the convergence criterion.
+Validates or defaults `max_iter_inner` based on the convergence criterion. If required but missing, sets a default value.
 """
-function validate_max_iter_inner!(max_iter_inner::Union{Nothing, Int}, conv_crit::ConvCrit)
-    if conv_crit in (MaxIterations, NormMaxIt, MaxItMaxTime, CombinedCrit, AdaptiveIterations) && max_iter_inner === nothing
+function validate_max_iter_inner!(max_iter_inner::Union{Nothing, Int}, conv_crit::Symbol)
+    if conv_crit in [:MaxIterations, :NormMaxIt, :MaxItMaxTime, :CombinedCrit, :AdaptiveIterations] && max_iter_inner === nothing
         @warn "max_iter_inner is required for convergence based on iteration count. Setting default to 500."
         return 500  # default value
     end
@@ -168,12 +169,12 @@ function validate_max_iter_inner!(max_iter_inner::Union{Nothing, Int}, conv_crit
 end
 
 """
-    validate_max_time_inner!(max_time_inner::Union{Nothing, Real}, conv_crit::ConvCrit)
+    validate_max_time_inner!(max_time_inner::Union{Nothing, Real}, conv_crit::Symbol)
 
-Validates or defaults `max_time_inner` based on the convergence criterion.
+Validates or defaults `max_time_inner` based on the convergence criterion. If required but missing, sets a default value.
 """
-function validate_max_time_inner!(max_time_inner::Union{Nothing, Real}, conv_crit::ConvCrit)
-    if conv_crit in (MaxTime, MaxItMaxTime, NormMaxTime, CombinedCrit) && max_time_inner === nothing
+function validate_max_time_inner!(max_time_inner::Union{Nothing, Real}, conv_crit::Symbol)
+    if conv_crit in [:MaxTime, :MaxItMaxTime, :NormMaxTime, :CombinedCrit] && max_time_inner === nothing
         @warn "max_time_inner is required for convergence based on time limits. Setting default to 60 seconds."
         return 60.0  # default value in seconds
     end
