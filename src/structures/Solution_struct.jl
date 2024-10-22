@@ -46,7 +46,7 @@ struct SEQUOIA_Solution_step
     fval::Float64                                                   # Objective value at this iteration
     gval::Vector{Float64}                                           # Gradient of the objective function
     cval::Union{Nothing, Vector{Float64}}                           # Constraints evaluated (if any)
-    solver_params::Union{Nothing, Vector{Float64}}                  # Optional solver-related parameters
+    solver_params::Union{Nothing, Vector{Float64}}                  # Optional solver-related parameters. Used for warm starting. Can be lagrange multipliers, penalty parameter, objective upper bound etc.
     x_iterates::Union{Nothing, Vector{Vector{Float64}}}             # History of x values
 
     # Full constructor

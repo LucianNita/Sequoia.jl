@@ -84,7 +84,7 @@ mutable struct SEQUOIA_Settings
     cost_tolerance::Union{Nothing, Real}           # Desired optimality gap.
     cost_min::Union{Nothing, Real}                 # Minimum cost - useful for spotting possible unbounded problems.
 
-    solver_params::Union{Nothing, Vector{Float64}} # Optional solver-related parameters.
+    solver_params::Union{Nothing, Vector{Float64}} # Optional solver-related parameters. Used for warm starting. Can be lagrange multipliers, penalty parameter, objective upper bound etc.
 
     """
     SEQUOIA_Settings(outer_method::Symbol, inner_solver::Symbol, feasibility::Bool, 

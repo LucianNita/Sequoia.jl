@@ -1,17 +1,17 @@
 using CUTEst
 
-export SEQUOIA_pb, ExitCode, 
+export SEQUOIA_pb, 
        set_objective!, set_gradient!, set_constraints!, set_jacobian!, set_bounds!, 
        set_initial_guess!, set_solver_settings!, set_feasibility!, reset_solution_history!
 
-@enum ExitCode begin
-    NotCalled = 0                # Problem not yet optimized
-    OptimalityReached = 1        # Optimal solution found
-    Infeasibility = 2            # Problem is infeasible
-    MaxIterations = 3            # Reached maximum number of iterations
-    Unbounded = 4                # Problem is unbounded
-    SolverError = 5              # Solver encountered an error
-end
+ExitCode = [
+    :NotCalled,                # Problem not yet optimized
+    :OptimalityReached,        # Optimal solution found
+    :Infeasibility,            # Problem is infeasible
+    :MaxIterations,            # Reached maximum number of iterations
+    :Unbounded,                # Problem is unbounded
+    :SolverError,              # Solver encountered an error
+]
 
 """
     SEQUOIA_pb
@@ -72,12 +72,11 @@ mutable struct SEQUOIA_pb # Sequoia problem definition struct
     is_feasibility::Bool                                                        # True for feasibility problem
 
     x0::Vector{Float64}                                                         # Initial guess for the variables
-    p::Vector{Float64}                                                          # Parameters used by various optimization methods - Used for warm starting. Can be lagrange multipliers, penalty parameter, objective upper bound etc.
     
     solver_settings::SEQUOIA_Settings                                           # Solver settings
     solution::SEQUOIA_Solution_step                                             # Store solution data regarding current step
-    solution_history::SEQUOIA_Iterates                                          # Store solution history 
-    exitCode::ExitCode                                                          # Termination status
+    solution_history::SEQUOIA_History                                           # Store solution history 
+    exitCode::Symbol                                                            # Termination status
 
     cutest_nlp::Union{Nothing, CUTEst.CUTEstModel}                              # CUTEst model handle - Optional 
 

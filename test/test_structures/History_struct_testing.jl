@@ -58,6 +58,9 @@
         # Test fallback methods
         @test_throws ArgumentError add_iterate!(0.5, [1.0, 2.0])  # Invalid both history and iterate
         @test_throws ArgumentError get_all(0.5, "invalid_field")  # Invalid both history and field
+
+        # Attempt to retrieve values with a non-Symbol field (String in this case)
+        @test_throws ArgumentError get_all(history, "fval")  # Invalid field type (should be a Symbol)
     end
 
     # Example 1: Using the Full Constructor
