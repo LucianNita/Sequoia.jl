@@ -32,8 +32,8 @@ The `SEQUOIA_pb` struct defines an optimization problem to be solved using SEQUO
 - `gradient::Union{Nothing, Function}`: The gradient of the objective function. Defaults to `nothing`.
 - `constraints::Union{Nothing, Function}`: A function returning a vector of constraints. Defaults to `nothing`.
 - `jacobian::Union{Nothing, Function}`: The Jacobian of the constraints. Defaults to `nothing`.
-- `eqcon::Union{Nothing, Vector{Int}}`: Indices of equality constraints, assuming `c_i(x) = 0`. Defaults to an empty vector.
-- `ineqcon::Union{Nothing, Vector{Int}}`: Indices of inequality constraints, assuming `c_i(x) ≤ 0`. Defaults to an empty vector.
+- `eqcon::Vector{Int}`: Indices of equality constraints, assuming `c_i(x) = 0`. Defaults to an empty vector.
+- `ineqcon::Vector{Int}`: Indices of inequality constraints, assuming `c_i(x) ≤ 0`. Defaults to an empty vector.
 - `solver_settings::SEQUOIA_Settings`: Settings for the optimization solver, including the algorithm to use and tolerance levels. Defaults to a pre-defined set of settings.
 - `solution_history::SEQUOIA_History`: Stores the history of all solution iterations. Defaults to an empty `SEQUOIA_History` object.
 - `exitCode::Symbol`: The termination status of the solver, defaulting to `:NotCalled`.
@@ -49,8 +49,8 @@ mutable struct SEQUOIA_pb
 
     constraints::Union{Nothing, Function}
     jacobian::Union{Nothing, Function}
-    eqcon::Union{Nothing, Vector{Int}}
-    ineqcon::Union{Nothing, Vector{Int}}
+    eqcon::Vector{Int}
+    ineqcon::Vector{Int}
 
     solver_settings::SEQUOIA_Settings
     solution_history::SEQUOIA_History
@@ -72,8 +72,8 @@ mutable struct SEQUOIA_pb
     - `gradient::Union{Nothing, Function}`: The gradient of the objective function. Defaults to `nothing`.
     - `constraints::Union{Nothing, Function}`: A function returning the vector of constraints. Defaults to `nothing`.
     - `jacobian::Union{Nothing, Function}`: The Jacobian matrix of the constraints. Defaults to `nothing`.
-    - `eqcon::Union{Nothing, Vector{Int}}`: Indices of equality constraints. Defaults to an empty vector.
-    - `ineqcon::Union{Nothing, Vector{Int}}`: Indices of inequality constraints. Defaults to an empty vector.
+    - `eqcon::Vector{Int}`: Indices of equality constraints. Defaults to an empty vector.
+    - `ineqcon::Vector{Int}`: Indices of inequality constraints. Defaults to an empty vector.
     - `solver_settings::SEQUOIA_Settings`: The settings for the solver. Defaults to `SEQUOIA_Settings(:QPM,:LBFGS,false,10^-6,1000,300)`.
     - `solution_history::SEQUOIA_History`: The history of solution steps. Defaults to an empty `SEQUOIA_History`.
     - `exitCode::Symbol`: The termination status of the solver. Defaults to `:NotCalled`.
@@ -86,13 +86,13 @@ mutable struct SEQUOIA_pb
                         gradient::Union{Nothing, Function} = nothing,
                         constraints::Union{Nothing, Function} = nothing,
                         jacobian::Union{Nothing, Function} = nothing,
-                        eqcon::Union{Nothing, Vector{Int}} = Int[],
-                        ineqcon::Union{Nothing, Vector{Int}} = Int[],
+                        eqcon::Vector{Int} = Int[],
+                        ineqcon::Vector{Int} = Int[],
                         solver_settings::SEQUOIA_Settings = SEQUOIA_Settings(:QPM,:LBFGS,false,10^-6,1000,300),
                         solution_history::SEQUOIA_History = SEQUOIA_History(),
                         exitCode::Symbol = :NotCalled,
                         cutest_nlp::Union{Nothing, CUTEst.CUTEstModel} = nothing)
-        
+        validate_nvar(nvar)
         return new(nvar, x0, is_minimization, objective, gradient, constraints, jacobian,
                    eqcon, ineqcon, solver_settings, solution_history, exitCode, cutest_nlp)
     end
@@ -148,7 +148,28 @@ function set_objective!(pb::SEQUOIA_pb, obj::Function; gradient::Union{Nothing, 
 end
 
 """
-    set_constraints!(pb::SEQUOIA_pb, constraints::Function, eqcon::Union{Nothing, Vector{Int}}, ineqcon::Union{Nothing, Vector{Int}}; jacobian::Union{Nothing, Function}=nothing, reset_history::Bool=true)
+    set_objective!(pb::Any, obj::Any; gradient::Union{Nothing, Function} = nothing, reset_history::Bool = true)
+
+Sets the objective function for a `SEQUOIA_pb` optimization problem. This function validates the problem instance and objective function before setting them. Optionally, a gradient can be provided, and the solution history can be reset.
+
+# Arguments
+- `pb`: The optimization problem instance. Must be of type `SEQUOIA_pb`.
+- `obj`: The objective function to set. Must be a callable function.
+- `gradient`: (Optional) The gradient function associated with the objective. Defaults to `nothing`. If not provided, a gradient may be computed using automatic differentiation.
+- `reset_history`: (Optional) A boolean flag indicating whether to reset the solution history. Defaults to `true`.
+
+# Throws
+- `ArgumentError`: If `pb` is not of type `SEQUOIA_pb`.
+- `ArgumentError`: If `obj` is not a callable function.
+"""
+
+function set_objective!(pb::Any, obj::Any; gradient::Union{Nothing, Function}=nothing, reset_history::Bool = true)
+    pb_fallback(pb);
+    objective_setter_fallback(obj);
+end
+
+"""
+    set_constraints!(pb::SEQUOIA_pb, constraints::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}; jacobian::Union{Nothing, Function}=nothing, reset_history::Bool=true)
 
 Sets the constraints and optional Jacobian for the SEQUOIA_pb problem. You can also specify equality and inequality constraint indices. Optionally resets the solution history.
 
@@ -163,7 +184,7 @@ Sets the constraints and optional Jacobian for the SEQUOIA_pb problem. You can a
 # Throws
 - `ArgumentError`: If the constraints are not callable or their dimensions do not match the provided indices.
 """
-function set_constraints!(pb::SEQUOIA_pb, constraints::Function, eqcon::Union{Nothing, Vector{Int}}, ineqcon::Union{Nothing, Vector{Int}}; jacobian::Union{Nothing, Function}=nothing, reset_history::Bool = true)
+function set_constraints!(pb::SEQUOIA_pb, constraints::Function, eqcon::Vector{Int}, ineqcon::Vector{Int}; jacobian::Union{Nothing, Function}=nothing, reset_history::Bool = true)
     pb.constraints = constraints
     pb.jacobian = jacobian
     pb.eqcon = eqcon
@@ -186,6 +207,24 @@ Sets the solver settings for the SEQUOIA_pb problem.
 """
 function set_solver_settings!(pb::SEQUOIA_pb, settings::SEQUOIA_Settings)
     pb.solver_settings = settings
+end
+
+"""
+    set_solver_settings!(pb::Any, settings::Any)
+
+Sets the solver settings for a SEQUOIA problem. This function first validates that the problem instance `pb` is of type `SEQUOIA_pb` and that the `settings` are valid `SEQUOIA_Settings`. If any validation fails, an error is thrown.
+
+# Arguments
+- `pb`: The problem instance to which the solver settings are being applied. Must be of type `SEQUOIA_pb`.
+- `settings`: The solver settings to be applied. Must be of type `SEQUOIA_Settings`.
+
+# Throws
+- `ArgumentError`: If `pb` is not of type `SEQUOIA_pb`.
+- `ArgumentError`: If `settings` is not of type `SEQUOIA_Settings`.
+"""
+function set_solver_settings!(pb::Any, settings::Any)
+    pb_fallback(pb);
+    solver_settings_fallback(settings);
 end
 
 """
@@ -214,5 +253,5 @@ Resets the solution history for the SEQUOIA_pb problem.
 - `pb`: The `SEQUOIA_pb` problem instance.
 """
 function reset_solution_history!(pb::SEQUOIA_pb)
-    pb.solution_history = SEQUOIA_Iterates()
+    pb.solution_history = SEQUOIA_History()
 end

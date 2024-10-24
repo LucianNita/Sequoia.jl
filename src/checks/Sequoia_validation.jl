@@ -1,6 +1,6 @@
 using ForwardDiff
 
-export validate_pb
+export validate_pb,validate_constraints!
 
 """
     validate_pb(pb::SEQUOIA_pb)
@@ -33,8 +33,9 @@ function validate_pb(pb::SEQUOIA_pb) # Main validation function for SEQUOIA_pb
     # Validate the constraints function and its consistency with the specified equality/inequality indices
     validate_constraints!(pb)
 
-    # Validate the solver settings
-    solver_settings_fallback(pb.solver_settings)
+    # Validate exit code
+    validate_code(pb.exitCode)
+
 end
 
 """
@@ -201,6 +202,7 @@ function validate_jacobian!(pb::SEQUOIA_pb)
     end
 end
 
+
 """
     validate_code(code::Symbol)
 
@@ -256,5 +258,22 @@ Validates that the solver settings are of type `SEQUOIA_Settings`.
 function solver_settings_fallback(solver_settings::Any)
     if !(solver_settings isa SEQUOIA_Settings)
         throw(ArgumentError("`solver_settings` must be of type `SEQUOIA_Settings`."))
+    end
+end
+
+"""
+    pb_fallback(pb::Any)
+
+Validates that the problem instance `pb` is of type `SEQUOIA_pb`. If it is not, throws an `ArgumentError`. This function is primarily used internally to ensure that the input to SEQUOIA-related functions is a valid `SEQUOIA_pb` instance.
+
+# Arguments
+- `pb`: The problem instance to validate.
+
+# Throws
+- `ArgumentError`: If `pb` is not of type `SEQUOIA_pb`.
+"""
+function pb_fallback(pb::Any)
+    if !(pb isa SEQUOIA_pb)
+        throw(ArgumentError("Problem `pb` must be of type `SEQUOIA_pb`."))
     end
 end

@@ -13,13 +13,13 @@ pb = SEQUOIA_pb(
     solver_settings = SEQUOIA_Settings(:QPM, :LBFGS, false, 1e-6, 1000, 3600.0)  # Solver settings
 )
 
-# Define the objective function
-objective_fn = x -> sum(x.^2)  # Simple quadratic objective
+# Define a simple quadratic objective function
+objective_fn = x -> sum(x.^2)
 set_objective!(pb, objective_fn)
 
-# Define constraints
-constraints_fn = x -> [x[1] + x[2] - 1.0]  # Constraint: x1 + x2 = 1
-set_constraints!(pb, constraints_fn, [1], [])  # Equality constraint
+# Define constraints: x1 + x2 = 1
+constraints_fn = x -> [x[1] + x[2] - 1.0]
+set_constraints!(pb, constraints_fn, [1], Int[])  # Equality constraint
 
 # Print the problem setup
 println(pb)
@@ -30,6 +30,7 @@ println(pb)
 
 # Example 1: Full Problem Setup with Constraints, Objective, and Initial Guess
 function example_full_problem_setup()
+    # Initialize the SEQUOIA problem with two variables and custom solver settings
     pb = SEQUOIA_pb(
         2, 
         x0 = [0.5, 0.5],               # Initial guess
@@ -37,17 +38,19 @@ function example_full_problem_setup()
         solver_settings = SEQUOIA_Settings(:QPM, :LBFGS, false, 1e-6, 1000, 3600.0)  # Solver settings
     )
 
-    # Define the objective function
-    objective_fn = x -> sum(x.^2)  # Simple quadratic objective
+    # Define a simple quadratic objective function
+    objective_fn = x -> sum(x.^2)
     set_objective!(pb, objective_fn)
 
-    # Define constraints
-    constraints_fn = x -> [x[1] + x[2] - 1.0]  # Constraint: x1 + x2 = 1
+    # Define constraints: x1 + x2 = 1
+    constraints_fn = x -> [x[1] + x[2] - 1.0]
     set_constraints!(pb, constraints_fn, [1], Int[])  # Equality constraint
 
-    # Print the problem setup
+    # Output the problem setup
+    println("Problem setup completed with constraints and objective:")
     println(pb)
 end
+
 
 """
 # Example 2: Unconstrained Minimization Problem with Automatic Differentiation
@@ -71,14 +74,18 @@ println(pb)
 
 # Example 2: Unconstrained Minimization Problem with Automatic Differentiation
 function example_unconstrained_problem()
+    # Initialize the SEQUOIA problem with two variables
     pb = SEQUOIA_pb(2)
 
-    # Define the objective function
-    objective_fn = x -> (x[1] - 3.0)^2 + (x[2] - 2.0)^2  # Minimize the distance from (3, 2)
-    set_objective!(pb, objective_fn)  # No need to set gradient, it will be auto-computed
+    # Define the objective function to minimize the distance from (3, 2)
+    objective_fn = x -> (x[1] - 3.0)^2 + (x[2] - 2.0)^2
+    set_objective!(pb, objective_fn)  # Gradient will be auto-computed
 
+    # Output the problem setup
+    println("Unconstrained problem setup with auto-computed gradient:")
     println(pb)
 end
+
 
 """
 # Example 3: Setting Solver Settings for a Feasibility Problem
@@ -109,6 +116,7 @@ println(pb)
 
 # Example 3: Setting Solver Settings for a Feasibility Problem
 function example_feasibility_problem()
+    # Initialize the SEQUOIA problem with three variables
     pb = SEQUOIA_pb(3)
 
     # Define solver settings for a feasibility problem
@@ -122,8 +130,11 @@ function example_feasibility_problem()
     )
     set_solver_settings!(pb, settings)
 
+    # Output the problem setup
+    println("Feasibility problem setup with custom solver settings:")
     println(pb)
 end
+
 
 
 """
@@ -146,15 +157,18 @@ end
 
 # Example 4: Handling an Invalid Objective Function
 function example_invalid_objective()
+    # Initialize the SEQUOIA problem with two variables
     pb = SEQUOIA_pb(2)
 
-    # Attempt to set an invalid objective function (e.g., returning a vector instead of a scalar)
+    # Attempt to set an invalid objective function
     try
-        set_objective!(pb, x -> [x[1] + x[2]])  # This should fail because the output is not a scalar
+        set_objective!(pb, x -> [x[1] + x[2]])  # Should fail; output is a vector, not a scalar
     catch e
-        println(e)  # Prints the error: "The objective function must return a scalar of type Float64."
+        println("Caught an error while setting an invalid objective function:")
+        println(e)  # Print the error message
     end
 end
+
 
 """
 # Example 5: Setting Constraints and Jacobian with Automatic Differentiation
@@ -178,17 +192,20 @@ println(pb)
 
 # Example 5: Setting Constraints and Jacobian with Automatic Differentiation
 function example_constraints_and_jacobian()
+    # Initialize the SEQUOIA problem with two variables
     pb = SEQUOIA_pb(2)
 
     # Define a simple constraint function
     constraints_fn = x -> [x[1]^2 + x[2] - 1.0]
 
-    # Set the constraints and let the Jacobian be computed automatically
+    # Set the constraints and auto-compute the Jacobian
     set_constraints!(pb, constraints_fn, eqcon = [1], ineqcon = [])
 
-    # Print the problem to verify the constraints and Jacobian setup
+    # Output the problem setup
+    println("Problem setup with constraints and auto-computed Jacobian:")
     println(pb)
 end
+
 
 """
 # Example 6: Setting Custom Solver Settings
@@ -218,23 +235,22 @@ println(pb)
 
 # Example 6: Setting Custom Solver Settings
 function example_custom_solver_settings()
+    # Initialize the SEQUOIA problem with three variables
     pb = SEQUOIA_pb(3)
 
-    # Define a simple objective function
+    # Define a simple quadratic objective function
     objective_fn = x -> sum(x.^2)
-
-    # Set the objective function for the problem
     set_objective!(pb, objective_fn)
 
     # Define custom solver settings
     custom_settings = SEQUOIA_Settings(:QPM, :Newton, false, 1e-7, 2000, 5000.0)
-
-    # Set custom solver settings for the problem
     set_solver_settings!(pb, custom_settings)
 
-    # Print the problem to verify the solver settings
+    # Output the problem setup
+    println("Problem setup with custom solver settings:")
     println(pb)
 end
+
 
 """
 # Example 7: Resetting the Solution History
@@ -264,21 +280,21 @@ println(pb)
 
 # Example 7: Resetting the Solution History
 function example_reset_solution_history()
+    # Initialize the SEQUOIA problem with two variables
     pb = SEQUOIA_pb(2)
 
-    # Define an objective function
+    # Define a simple objective function
     objective_fn = x -> sum(x.^2)
-
-    # Set the objective function for the problem
     set_objective!(pb, objective_fn)
 
-    # Solve the problem (hypothetical solve, just a placeholder)
-    println("Solving the problem...")
+    # Simulate solving the problem
+    println("Solving the problem (simulation)...")
 
-    # Reset the solution history after solving
+    # Reset the solution history after the simulation
     reset_solution_history!(pb)
 
-    # Print the problem to verify that the solution history is reset
+    # Output the problem to verify history reset
+    println("Solution history reset:")
     println(pb)
 end
 
@@ -316,19 +332,22 @@ Caught an error: Invalid exit code: `:InvalidCode`. Must be one of: [:NotCalled,
 
 # Example 8: Handling Invalid Exit Codes
 function example_invalid_exit_code()
+    # Initialize the SEQUOIA problem with two variables
     pb = SEQUOIA_pb(2)
 
-    # Attempt to update the exit code with a valid value
+    # Set a valid exit code
     update_exit_code!(pb, :OptimalityReached)
 
-    # Print the updated problem
+    # Output the updated problem with a valid exit code
     println("Updated exit code to :OptimalityReached:")
     println(pb)
 
-    # Now attempt to update the exit code with an invalid value (this will throw an error)
+    # Attempt to set an invalid exit code
     try
         update_exit_code!(pb, :InvalidCode)
     catch e
-        println("Caught an error: ", e)
+        println("Caught an error while setting an invalid exit code:")
+        println(e)
     end
 end
+
