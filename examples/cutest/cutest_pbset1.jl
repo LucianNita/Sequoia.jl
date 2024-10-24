@@ -1,0 +1,1 @@
+problems = CUTEst.select() #minvar #maxvar #mincon #maxcon #onlyfreevar #onlynonlinearcon #onlyequcon #onlyineqcon
