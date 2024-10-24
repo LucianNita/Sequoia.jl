@@ -72,6 +72,11 @@
 
         # Invalid objective function (output is not a scalar)
         @test_throws ArgumentError set_objective!(pb, x -> [x[1], x[2]])  # Should throw error
+
+         # Objective function that is not callable
+         non_callable_objective = "This is not a function"
+         pb_non_callable = SEQUOIA_pb(2, x0 = [1.0, 2.0])
+         @test_throws ArgumentError set_objective!(pb_non_callable, non_callable_objective)  # Should trigger `objective_setter_fallback`
     end
 
     # Test Gradient Function and Automatic Differentiation
@@ -113,6 +118,40 @@
         @test pb.jacobian !== nothing
     end
 
+    #Test indices for constraints
+    @testset "Validation of Equality and Inequality Constraint Indices" begin
+        # Create a SEQUOIA_pb instance with two variables
+        pb = SEQUOIA_pb(2, x0 = [1.0, 1.0])
+    
+        # Define a constraints function that returns two constraints
+        constraints_fn = x -> [x[1] + x[2] - 1.0, x[1]^2 + x[2] - 2.0]
+    
+        # Set the constraints with indices that do not cover all constraints exactly once
+        # Here we define eqcon to have only one index, but the constraints function returns two constraints
+        # This should trigger the ArgumentError
+        @test_throws ArgumentError set_constraints!(pb, constraints_fn, [1], Int[])
+    end
+
+    #Validation of Jacobian size if user-provided
+    @testset "Validation of Jacobian Matrix Dimensions" begin
+        # Create a SEQUOIA_pb instance with two variables
+        pb = SEQUOIA_pb(2, x0 = [1.0, 1.0])
+    
+        # Define a constraints function that returns two constraints
+        constraints_fn = x -> [x[1] + x[2] - 1.0, x[1]^2 + x[2] - 2.0]
+    
+        # Set valid constraints first
+        set_constraints!(pb, constraints_fn, [1, 2], Int[])
+    
+        # Define an incorrect Jacobian function (wrong dimensions)
+        # The correct size should be (2, 2), but we provide a (1, 2) matrix instead
+        incorrect_jacobian_fn = x -> [1.0 1.0]  # Incorrect: only 1 row
+    
+        # Attempt to set the constraints with the incorrect Jacobian
+        # This should trigger the ArgumentError due to wrong matrix dimensions
+        @test_throws ArgumentError set_constraints!(pb, constraints_fn, [1, 2], Int[], jacobian = incorrect_jacobian_fn)
+    end
+
     # Test Solver Settings
     @testset "Solver Settings" begin
         pb = SEQUOIA_pb(2)
@@ -125,6 +164,17 @@
         # Invalid settings
         @test_throws ArgumentError set_solver_settings!(pb, "InvalidSetting")  # Should throw error
     end
+
+    # Test the SEQUOIA_pb fallback 
+    @testset "Validation of SEQUOIA_pb Type" begin
+        # Create an invalid input that is not of type SEQUOIA_pb
+        invalid_input = "This is not a SEQUOIA_pb instance"
+        valid_solver_settings = SEQUOIA_Settings(:QPM, :LBFGS, false, 1e-6, 1000, 300)
+
+        # Use set_solver_settings! with an invalid pb
+        @test_throws ArgumentError set_solver_settings!(invalid_input, valid_solver_settings)
+    end
+
 
     # Test Exit Code Validation
     @testset "Exit Code Validation" begin

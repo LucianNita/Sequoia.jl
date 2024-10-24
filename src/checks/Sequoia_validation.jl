@@ -237,7 +237,7 @@ If the input is not a callable function, an error is raised.
 - `ArgumentError` if the `objective` is not a callable function.
 """
 function objective_setter_fallback(objective::Any)
-    if !isfunction(objective)
+    if !isa(objective, Function)
         throw(ArgumentError("The objective must be a callable function."))
     end
 end

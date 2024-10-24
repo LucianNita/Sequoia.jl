@@ -33,6 +33,9 @@
             invalid_objective_fn = x -> [x[1] + x[2]]
             pb_invalid_obj = SEQUOIA_pb(2, x0 = [1.0, 2.0], objective = invalid_objective_fn)
             @test_throws ArgumentError validate_pb(pb_invalid_obj)  # Should throw error
+
+            pb_no_objective = SEQUOIA_pb(2, x0 = [1.0, 2.0])
+            @test_throws ArgumentError validate_pb(pb_no_objective)  # Should throw error since no objective is set 
         end
     
         # Test 4: Validate gradient function
