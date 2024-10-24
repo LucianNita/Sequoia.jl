@@ -127,9 +127,9 @@
         constraints_fn = x -> [x[1] + x[2] - 1.0, x[1]^2 + x[2] - 2.0]
     
         # Set the constraints with indices that do not cover all constraints exactly once
-        # Here we define eqcon to have only one index, but the constraints function returns two constraints
+        # Here we define eqcon to have only one index [1] and we mistakenly define the ineqcon to have the same index [1] instead of [2]
         # This should trigger the ArgumentError
-        @test_throws ArgumentError set_constraints!(pb, constraints_fn, [1], Int[])
+        @test_throws ArgumentError set_constraints!(pb, constraints_fn, [1], [1])
     end
 
     #Validation of Jacobian size if user-provided
