@@ -9,12 +9,11 @@ outer_methods = [:SEQUOIA, :QPM, :AugLag, :IntPt]
 # List of valid convergence criteria
 convergence_criterias = [
     :GradientNorm,       # Convergence based on gradient norm
-    :MaxIterations,      # Convergence based on max number of iterations
-    :MaxTime,            # Convergence based on max computational time
+
+    :MaxIterations,      # Convergence based on gradient norm or max number of iterations
+    :MaxTime,            # Convergence based on gradient norm or max computational time
     :ConstraintResidual, # Convergence based on constraint residual (relevant for feasibility)
-    :NormMaxIt,          # Combined: gradient norm below tolerance OR iterations exceeded
-    :MaxItMaxTime,       # Combined: iterations exceeded OR max time exceeded
-    :NormMaxTime,        # Combined: gradient norm below tolerance OR max time exceeded
+
     :CombinedCrit,       # Combined: gradient norm below tolerance OR iterations OR max time
     :AdaptiveIterations  # Adaptive inner iterations based on outer iteration count
 ]
@@ -52,9 +51,6 @@ The `SEQUOIA_Settings` struct stores the key settings required for solving optim
     - `:MaxIterations`: Based on a maximum number of iterations.
     - `:MaxTime`: Based on maximum computational time.
     - `:ConstraintResidual`: Based on constraint residuals.
-    - `:NormMaxIt`: Either gradient norm below tolerance or iterations exceeded.
-    - `:MaxItMaxTime`: Either number of iterations exceeded or maximum time exceeded.
-    - `:NormMaxTime`: Either gradient norm below tolerance or maximum time exceeded.
     - `:CombinedCrit`: A combination of gradient norm, number of iterations, or maximum time exceeded.
     - `:AdaptiveIterations`: Adaptive inner iterations based on outer iteration count.
 

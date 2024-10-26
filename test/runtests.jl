@@ -12,8 +12,8 @@ using CUTEst
 #include("test_checks/Solution_validation_testing.jl");
 #include("test_checks/Sequoia_validation_testing.jl");
 
-include("test_interfaces/cutest_interface_testing.jl");
-#include("test_interfaces/solve.jl");
+#include("test_interfaces/cutest_interface_testing.jl");
+include("test_interfaces/solve_testing.jl");
 
 #include("test_algorithms/qpm_testing.jl");
 #include("test_algorithms/auglag_testing.jl");

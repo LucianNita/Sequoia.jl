@@ -59,8 +59,8 @@ function validate_sequoia_solution!(solution::SEQUOIA_Solution_step)
 
     # Validate `x_iterates` if provided: it must be a vector of `num_inner_iterations` vectors of the same size as `x`
     if !isnothing(solution.x_iterates)
-        if length(solution.x_iterates) != solution.num_inner_iterations
-            throw(ArgumentError("`x_iterates` must contain exactly `num_inner_iterations` vectors."))
+        if length(solution.x_iterates) != solution.num_inner_iterations+1
+            throw(ArgumentError("`x_iterates` must contain exactly `num_inner_iterations`+1 vectors."))
         end
         if any(length(x_iter) != length(solution.x) for x_iter in solution.x_iterates)
             throw(ArgumentError("Each vector in `x_iterates` must have the same number of elements as `x`."))

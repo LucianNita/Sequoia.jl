@@ -11,11 +11,11 @@ include("checks/History_validation.jl");
 include("checks/Sequoia_validation.jl");
 
 include("interfaces/cutest_interface.jl");
-#include("interfaces/solve.jl");
+include("interfaces/solve.jl");
 
 include("checks/cutest_check.jl");
 
-#include("algorithms/qpm.jl");
+include("algorithms/qpm.jl");
 #include("algorithms/auglag.jl");
 #include("algorithms/ipm.jl");
 #include("algorithms/sequoia.jl");

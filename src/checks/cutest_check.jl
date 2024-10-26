@@ -1,5 +1,3 @@
-using Test
-
 """
     validate_cutest_to_sequoia(pb::SEQUOIA_pb, cutest_problem::CUTEstModel)
 
