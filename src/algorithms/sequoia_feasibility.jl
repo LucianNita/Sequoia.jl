@@ -5,27 +5,14 @@ using NLPModels
 using CUTEst
 using ForwardDiff
 
-function qpm_solve_cutest(problem::CUTEstModel, inner_solver)
+function sequoia_feasibility_cutest(problem::CUTEstModel, inner_solver)
     # Extract initial parameters
     x = problem.meta.x0  # Initial guess
-    nvar = problem.meta.nvar
-    penalty_init = 1.0
-    penalty_mult = 10.0
-    damping_factor = 10.0
-    rtol = 1e-6
-
-    # Constraint indices (from CUTEst problem metadata)
-    n_eq = problem.meta.jfix
-    n_ineq = length(problem.meta.jlow) + length(problem.meta.jupp) + length(problem.meta.jrng)
-
-    # Penalty parameters
-    penalty_param = penalty_init
-    max_iter_outer = 100
     max_iter_inner = 1000
 
     # Function to calculate the augmented objective
-    function augmented_objective(x, penalty_param)
-        obj_val = obj(problem, x)
+    function residual(x)
+        obj_val = 0.0;
         constraint_val = cons(problem, x)
         eq_penalty_term = 0.0
         lineq_penalty_term = 0.0
@@ -39,54 +26,54 @@ function qpm_solve_cutest(problem::CUTEstModel, inner_solver)
 
         # Handle equality constraints (penalty applied if violated)
         for i in eachindex(problem.meta.jfix)
-            eq_penalty_term += 0.5 * penalty_param * (constraint_val[problem.meta.jfix[i]]-problem.meta.lcon[problem.meta.jfix[i]])^2
+            eq_penalty_term += 0.5 * (constraint_val[problem.meta.jfix[i]]-problem.meta.lcon[problem.meta.jfix[i]])^2
         end
 
         # Handle inequality constraints (penalty applied if outside bounds)
         for i in eachindex(problem.meta.jlow)
             if constraint_val[problem.meta.jlow[i]] < problem.meta.lcon[problem.meta.jlow[i]]
-                lineq_penalty_term += 0.5 * penalty_param * (problem.meta.lcon[problem.meta.jlow[i]]-constraint_val[problem.meta.jlow[i]])^2
+                lineq_penalty_term += 0.5 * (problem.meta.lcon[problem.meta.jlow[i]]-constraint_val[problem.meta.jlow[i]])^2
             end
         end
 
         for i in eachindex(problem.meta.jupp)
             if constraint_val[problem.meta.jupp[i]] > problem.meta.ucon[problem.meta.jupp[i]]
-                uineq_penalty_term += 0.5 * penalty_param * (constraint_val[problem.meta.jupp[i]]-problem.meta.ucon[problem.meta.jupp[i]])^2
+                uineq_penalty_term += 0.5 * (constraint_val[problem.meta.jupp[i]]-problem.meta.ucon[problem.meta.jupp[i]])^2
             end
         end
 
         for i in eachindex(problem.meta.jrng)
             if constraint_val[problem.meta.jrng[i]] > problem.meta.ucon[problem.meta.jrng[i]]
-                rineq_penalty_term += 0.5 * penalty_param * (constraint_val[problem.meta.jrng[i]]-problem.meta.ucon[problem.meta.jrng[i]])^2
+                rineq_penalty_term += 0.5 * (constraint_val[problem.meta.jrng[i]]-problem.meta.ucon[problem.meta.jrng[i]])^2
             end
             if constraint_val[problem.meta.jrng[i]] < problem.meta.lcon[problem.meta.jrng[i]]
-                rineq_penalty_term += 0.5 * penalty_param * (problem.meta.lcon[problem.meta.jrng[i]]-constraint_val[problem.meta.jrng[i]])^2
+                rineq_penalty_term += 0.5 * (problem.meta.lcon[problem.meta.jrng[i]]-constraint_val[problem.meta.jrng[i]])^2
             end
         end
 
         for i in eachindex(problem.meta.ifix)
-            var_fix += 0.5 * penalty_param * (x[problem.meta.ifix[i]]-problem.meta.lvar[i])^2
+            var_fix += 0.5 * (x[problem.meta.ifix[i]]-problem.meta.lvar[i])^2
         end
 
         # Handle inequality constraints (penalty applied if outside bounds)
         for i in eachindex(problem.meta.ilow)
             if x[problem.meta.ilow[i]] < problem.meta.lvar[problem.meta.ilow[i]]
-                var_low += 0.5 * penalty_param * (problem.meta.lvar[problem.meta.ilow[i]]-x[problem.meta.ilow[i]])^2
+                var_low += 0.5 * (problem.meta.lvar[problem.meta.ilow[i]]-x[problem.meta.ilow[i]])^2
             end
         end
 
         for i in eachindex(problem.meta.iupp)
             if x[problem.meta.iupp[i]] > problem.meta.uvar[problem.meta.iupp[i]]
-                var_upp += 0.5 * penalty_param * (x[problem.meta.iupp[i]]-problem.meta.uvar[problem.meta.iupp[i]])^2
+                var_upp += 0.5 * (x[problem.meta.iupp[i]]-problem.meta.uvar[problem.meta.iupp[i]])^2
             end
         end
 
         for i in eachindex(problem.meta.irng)
             if x[problem.meta.irng[i]] < problem.meta.lvar[problem.meta.irng[i]]
-                var_rng += 0.5 * penalty_param * (problem.meta.lvar[problem.meta.irng[i]]-x[problem.meta.irng[i]])^2
+                var_rng += 0.5 * (problem.meta.lvar[problem.meta.irng[i]]-x[problem.meta.irng[i]])^2
             end
             if x[problem.meta.irng[i]] > problem.meta.uvar[problem.meta.irng[i]]
-                var_rng += 0.5 * penalty_param * (x[problem.meta.irng[i]]-problem.meta.uvar[problem.meta.irng[i]])^2
+                var_rng += 0.5 * (x[problem.meta.irng[i]]-problem.meta.uvar[problem.meta.irng[i]])^2
             end
         end
 
@@ -94,15 +81,14 @@ function qpm_solve_cutest(problem::CUTEstModel, inner_solver)
         return obj_val + eq_penalty_term + lineq_penalty_term + uineq_penalty_term + rineq_penalty_term + var_fix + var_low + var_upp + var_rng 
     end
 
-    function augmented_gradient!(grad_storage, x, penalty_param)
-        # Gradient of the objective function
-        grad_obj = grad(problem, x)
+    function augmented_gradient!(grad_storage, x)
 
         # Get constraint values and the Jacobian
         constraint_val = cons(problem, x)
         jacobian = jac(problem, x)  # This will be a sparse matrix
 
         # Initialize penalty gradients
+        grad_obj = zeros(length(x))
         grad_eq_penalty = zeros(length(x))
         grad_ineq_penalty = zeros(length(x))
         grad_var_penalty = zeros(length(x))
@@ -111,7 +97,7 @@ function qpm_solve_cutest(problem::CUTEstModel, inner_solver)
         for i in eachindex(problem.meta.jfix)
             idx = problem.meta.jfix[i]
             violation = constraint_val[idx] - problem.meta.lcon[idx]
-            grad_eq_penalty += penalty_param * jacobian[idx, :] * violation
+            grad_eq_penalty += jacobian[idx, :] * violation
         end
 
         # Inequality constraints: lower bounds
@@ -119,7 +105,7 @@ function qpm_solve_cutest(problem::CUTEstModel, inner_solver)
             idx = problem.meta.jlow[i]
             if constraint_val[idx] < problem.meta.lcon[idx]
                 violation = constraint_val[idx] - problem.meta.lcon[idx]
-                grad_ineq_penalty += penalty_param * jacobian[idx, :] * violation
+                grad_ineq_penalty += jacobian[idx, :] * violation
             end
         end
 
@@ -128,7 +114,7 @@ function qpm_solve_cutest(problem::CUTEstModel, inner_solver)
             idx = problem.meta.jupp[i]
             if constraint_val[idx] > problem.meta.ucon[idx]
                 violation = constraint_val[idx] - problem.meta.ucon[idx]
-                grad_ineq_penalty += penalty_param * jacobian[idx, :] * violation 
+                grad_ineq_penalty += jacobian[idx, :] * violation 
             end
         end
 
@@ -137,11 +123,11 @@ function qpm_solve_cutest(problem::CUTEstModel, inner_solver)
             idx = problem.meta.jrng[i]
             if constraint_val[idx] > problem.meta.ucon[idx]
                 violation = constraint_val[idx] - problem.meta.ucon[idx]
-                grad_ineq_penalty += penalty_param * jacobian[idx, :] * violation 
+                grad_ineq_penalty += jacobian[idx, :] * violation 
             end
             if constraint_val[idx] < problem.meta.lcon[idx]
                 violation = constraint_val[idx] - problem.meta.lcon[idx]
-                grad_ineq_penalty += penalty_param * jacobian[idx, :] * violation 
+                grad_ineq_penalty += jacobian[idx, :] * violation 
             end
         end
 
@@ -149,14 +135,14 @@ function qpm_solve_cutest(problem::CUTEstModel, inner_solver)
         for i in eachindex(problem.meta.ifix)
             idx = problem.meta.ifix[i]
             violation = x[idx] - problem.meta.lvar[idx]
-            grad_var_penalty[idx] += penalty_param * violation
+            grad_var_penalty[idx] += violation
         end
 
         for i in eachindex(problem.meta.ilow)
             idx = problem.meta.ilow[i]
             if x[idx] < problem.meta.lvar[idx]
                 violation = x[idx] - problem.meta.lvar[idx]
-                grad_var_penalty[idx] += penalty_param * violation
+                grad_var_penalty[idx] += violation
             end
         end
 
@@ -164,7 +150,7 @@ function qpm_solve_cutest(problem::CUTEstModel, inner_solver)
             idx = problem.meta.iupp[i]
             if x[idx] > problem.meta.uvar[idx]
                 violation = x[idx] - problem.meta.uvar[idx]
-                grad_var_penalty[idx] += penalty_param * violation
+                grad_var_penalty[idx] += violation
             end
         end
 
@@ -172,11 +158,11 @@ function qpm_solve_cutest(problem::CUTEstModel, inner_solver)
             idx = problem.meta.irng[i]
             if x[idx] > problem.meta.uvar[idx]
                 violation = x[idx] - problem.meta.uvar[idx]
-                grad_var_penalty[idx] += penalty_param * violation
+                grad_var_penalty[idx] += violation
             end
             if x[idx] < problem.meta.lvar[idx]
                 violation = x[idx] - problem.meta.lvar[idx]
-                grad_var_penalty[idx] += penalty_param * violation
+                grad_var_penalty[idx] += violation
             end
         end
 
@@ -202,21 +188,23 @@ function qpm_solve_cutest(problem::CUTEstModel, inner_solver)
         return eq_violation + lineq_violation + uineq_violation + rineq_violation + var_fix_violation + var_low_violation + var_upp_violation + var_rng_violation
     end
 
+
     # Initialize iteration variables
     iteration = 1
     time_elapsed = 0.0
     solution_history = []
+    rk=residual(x)
 
-    while iteration < max_iter_outer
-        # Define the augmented objective and gradient functions
-        obj_aug_fn = x -> augmented_objective(x, penalty_param)
-        grad_aug_fn! = (g, x) -> augmented_gradient!(g, x, penalty_param)
-
+        obj_aug_fn = x -> residual(x)
+        grad_aug_fn! = (g, x) -> augmented_gradient!(g, x)
+    
         # Optim.jl options for inner solve
         options = Optim.Options(g_tol=rtol, iterations=max_iter_inner, store_trace=true, extended_trace=true, show_trace=false)
-
+    
         # Solve the unconstrained subproblem
         result = Optim.optimize(obj_aug_fn, grad_aug_fn!, x, inner_solver, options)
+
+
 
         # Extract the solution
         x = result.minimizer
@@ -235,22 +223,11 @@ function qpm_solve_cutest(problem::CUTEstModel, inner_solver)
         )
         push!(solution_history, step)
 
-        # Convergence check
-        if constraint_violation < rtol
-            println("Converged after $(iteration) iterations.")
-            return solution_history
-        end
-
-        # Update the penalty parameter
-        penalty_param *= penalty_mult#min(max(1, constraint_violation / rtol), damping_factor);
-        # Increment iteration counter
-        iteration += 1
-        time_elapsed += inner_comp_time
-    end
-
     return solution_history
 end
 
-problem=CUTEstModel("HS21");#BT1
-sol_hist=qpm_solve_cutest(problem,Optim.LBFGS())
+
+
+problem=CUTEstModel("BT1");
+sol_hist=sequoia_solve_cutest(problem,Optim.LBFGS())
 finalize(problem)
