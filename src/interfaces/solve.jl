@@ -1,5 +1,6 @@
 import Optim
 using LinearAlgebra
+using SparseArrays
 
 export solve!
 
@@ -8,6 +9,7 @@ function solve!(problem::SEQUOIA_pb)
 
     # Inner solver from SEQUOIA_Settings
     inner_solver = choose_inner_solver(problem.solver_settings.inner_solver)
+    options = set_options(problem.solver_settings)
 
 
     if problem.solver_settings.outer_method == :QPM
@@ -16,9 +18,9 @@ function solve!(problem::SEQUOIA_pb)
         elseif length(problem.solver_settings.solver_params) != 4
             throw(ArgumentError("Number of solver parameters is incompatible with the solver. Current solver chosen $(problem.solver_settings.outer_method). Number of expected parameters 4, got $(length(problem.solver_settings.solver_params)). Please modify the settings by either choosing a different solver, providing an appropriate number of parameters, or leaving the optional field free."))
         end
-
+        
         #  Call the QPM algorithm with extracted data, returns solution history
-        problem.solution_history = qpm_solve(problem,inner_solver)
+        problem.solution_history = qpm_solve(problem,inner_solver,options)
 
     elseif problem.solver_settings.outer_method == :AugLag
         if problem.solver_settings.solver_params === nothing
@@ -51,4 +53,20 @@ function choose_inner_solver(inner_solver::Symbol)
     else
         error("Unknown inner solver: $inner_solver. Make sure you use one of the accepted and tested solvers.")
     end
+end
+
+function set_options(settings::SEQUOIA_Settings)        # Set Optim options
+    if settings.conv_crit==:GradientNorm
+        options = Optim.Options(g_tol=settings.resid_tolerance, store_trace=true, extended_trace=true, show_trace=false)
+    elseif settings.conv_crit==:MaxIterations
+        options = Optim.Options(g_tol=settings.resid_tolerance, iterations=settings.max_iter_inner, store_trace=true, extended_trace=true, show_trace=false)
+    elseif settings.conv_crit==:MaxTime
+        options = Optim.Options(g_tol=settings.resid_tolerance, time_limit=settings.max_time_inner, store_trace=true, extended_trace=true, show_trace=false)
+    elseif settings.conv_crit==:CombinedCrit
+        options = Optim.Options(g_tol=settings.resid_tolerance, iterations=settings.max_iter_inner, time_limit=settings.max_time_inner, store_trace=true, extended_trace=true, show_trace=false)
+    else
+        throw(ArgumentError("Invalid convergence criterion: $conv_crit. Valid criteria are: $(join(valid_convergence_criterias, ", "))."))
+    end
+
+    return options
 end

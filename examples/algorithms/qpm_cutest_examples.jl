@@ -1,13 +1,10 @@
-using CUTEst, Sequoia
+using CUTEst, Sequoia, Optim
 
-# Load a CUTEst problem, e.g., HS25
-problem = CUTEstModel("HS21")
+problem=CUTEstModel("HS21");#BT1
 
 sequoia_problem = cutest_to_sequoia(problem)
-
-solution_history = solve!(sequoia_problem);
-
-# Access the solution history
-println("Solution history: ", solution_history)
+#sol_hist=qpm_solve_cutest(problem,Optim.LBFGS(),Optim.Options(g_tol=1e-6, iterations=100, store_trace=true, extended_trace=true, show_trace=false))
+sol_hist = solve!(sequoia_problem);
+println("Solution history: ", sol_hist)# Access the solution history
 
 finalize(problem)

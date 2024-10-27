@@ -197,8 +197,8 @@ function validate_jacobian!(pb::SEQUOIA_pb)
     num_constraints = length(pb.constraints(pb.x0))
 
     # Check if the result is a matrix of Float64 and has the correct size (num_constraints x nvar)
-    if !(isa(result, Matrix{Float64}) && size(result) == (num_constraints, pb.nvar))
-        throw(ArgumentError("The Jacobian must be a matrix of Float64 of size (num_constraints, nvar), where num_constraints is the number of constraints and nvar is the number of variables."))
+    if size(result) != (num_constraints, pb.nvar) #|| !isa(result, Matrix{Float64}) 
+        throw(ArgumentError("The Jacobian must be a matrix of size (num_constraints, nvar), where num_constraints is the number of constraints and nvar is the number of variables.")) # of Float64
     end
 end
 
