@@ -279,3 +279,38 @@ function exact_constraint_violation(x,problem::SEQUOIA_pb)
     ineq_violation = norm(max.(0.0, constraint_val[problem.ineqcon]))  # Inequality violation
     return eq_violation + ineq_violation
 end
+
+function r(x,tk,problem::SEQUOIA_pb)
+    cviol = r0(x,problem);
+    obj_val = 0.0;
+
+    obj_penalty = problem.objective(x)-tk;
+    if obj_penalty>0.0
+        obj_val=0.5*(obj_penalty)^2
+    end
+
+    return cviol+obj_val;
+end
+
+
+function r_gradient!(grad_storage, x, tk, problem::SEQUOIA_pb)
+
+    grad_obj = zeros(length(x))
+
+    # Gradient of the objective function
+    obj_viol=problem.objective(x) - tk
+    if obj_viol > 0.0
+        grad_obj = problem.gradient(x) * (obj_viol)
+    end
+
+    r0_gradient!(grad_storage,x,problem);
+
+    grad_storage .= grad_storage .+ grad_obj;
+
+end
+
+function exact_augmented_constraint_violation(x,tk,problem::SEQUOIA_pb)
+    obj_violation = max(0.0, problem.objective(x)-tk)
+
+    return obj_violation + exact_constraint_violation(x,problem)
+end

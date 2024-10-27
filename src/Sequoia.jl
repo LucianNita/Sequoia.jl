@@ -16,11 +16,10 @@ include("interfaces/solve.jl");
 include("checks/cutest_check.jl");
 
 include("algorithms/qpm.jl");
-include("algorithms/qpm_cutest.jl")
 include("algorithms/sequoia_feasibility.jl")
 #include("algorithms/auglag.jl");
 #include("algorithms/ipm.jl");
-include("algorithms/sequoia_cutest.jl");
+include("algorithms/sequoia.jl");
 
 include("algorithms/residuals.jl")
 

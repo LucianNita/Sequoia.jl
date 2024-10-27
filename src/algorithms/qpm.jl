@@ -8,7 +8,7 @@ function qpm_solve(problem::SEQUOIA_pb, inner_solver,options)
     x=problem.x0;
 
     iteration = 1  # Initialize iteration counter
-    time = 0 # Initialization of computational time
+    time = 0.0 # Initialization of computational time
     penalty_param = penalty_init  # Set initial penalty parameter
     solution_history = SEQUOIA_History();  # Initialize the solution history
 
