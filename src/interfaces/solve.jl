@@ -24,13 +24,14 @@ function solve!(problem::SEQUOIA_pb)
 
     elseif problem.solver_settings.outer_method == :AugLag
         if problem.solver_settings.solver_params === nothing
-            problem.solver_settings.solver_params=vcat([1.0,10.0,10.0,0.0],zeros(length(problem.eq_indices)+length(problem.ineq_indices)));
-        elseif length(problem.solver_settings.solver_params) != 4+length(problem.eq_indices)+length(problem.ineq_indices)
+            problem.solver_settings.solver_params=vcat([1.0,10.0,10.0,0.0],zeros(length(problem.eqcon)+length(problem.ineqcon)));
+        elseif length(problem.solver_settings.solver_params) != 4+length(problem.eqcon)+length(problem.ineqcon)
             throw(ArgumentError("Number of solver parameters is incompatible with the solver. Current solver chosen $(problem.solver_settings.outer_method). Number of expected parameters $(4+length(problem.eq_indices)+length(problem.ineq_indices)), got $(length(problem.solver_settings.solver_params)). Please modify the settings by either choosing a different solver, providing an appropriate number of parameters, or leaving the optional field free."))
         end
 
         # Call the ALM algorithm with extracted data, returns solution history
-        problem.solution_history = alm_solve(problem, inner_solver)
+        problem.solution_history = alm_solve(problem, inner_solver,options)
+
     elseif problem.solver_settings.outer_method == :SEQUOIA
         if problem.solver_settings.solver_params === nothing
             problem.solver_settings.solver_params=[2.0,2.0,0.3];
@@ -40,6 +41,7 @@ function solve!(problem::SEQUOIA_pb)
         
         #  Call the QPM algorithm with extracted data, returns solution history
         problem.solution_history = sequoia_solve(problem,inner_solver,options)
+        
     else
         error("The provided outer_method is not supported. Only QPM, AugLag are implemented.")
     end

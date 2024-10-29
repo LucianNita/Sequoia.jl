@@ -17,7 +17,7 @@ function qpm_solve(problem::SEQUOIA_pb, inner_solver,options)
         if problem.cutest_nlp === nothing
             # Use Optim.jl to minimize the augmented objective function
             obj_aug_fn = x -> qpm_obj(x, penalty_param, problem)
-            grad_aug_fn! = (g, x) -> qpm_grad!(g, x, penalty_param,problem)
+            grad_aug_fn! = (g, x) -> qpm_grad!(g, x, penalty_param, problem)
         else 
             obj_aug_fn = x -> qpm_obj(x, penalty_param, problem.cutest_nlp)
             grad_aug_fn! = (g, x) -> qpm_grad!(g, x, penalty_param,problem.cutest_nlp)

@@ -17,7 +17,7 @@ include("checks/cutest_check.jl");
 
 include("algorithms/qpm.jl");
 include("algorithms/sequoia_feasibility.jl")
-#include("algorithms/auglag.jl");
+include("algorithms/auglag.jl");
 #include("algorithms/ipm.jl");
 include("algorithms/sequoia.jl");
 

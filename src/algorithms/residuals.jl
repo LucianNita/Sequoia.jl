@@ -314,3 +314,39 @@ function exact_augmented_constraint_violation(x,tk,problem::SEQUOIA_pb)
 
     return obj_violation + exact_constraint_violation(x,problem)
 end
+
+function auglag_obj(x, μ, λ, problem::SEQUOIA_pb)
+    constraint_val = problem.constraints(x)
+    for i in problem.ineqcon
+        if constraint_val[i] <= 0.0
+            constraint_val[i] = 0.0;
+        end
+    end
+    return problem.objective(x) + μ*r0(x,problem) + constraint_val' * λ
+end
+
+function auglag_grad!(g, x, μ, λ, problem::SEQUOIA_pb)
+    grad_obj = problem.gradient(x);
+    jac=problem.jacobian(x);
+    constraint_val = problem.constraints(x);
+    for i in problem.ineqcon
+        if constraint_val[i] <= 0.0
+            jac[i,:] = zeros(length(x));
+        end
+    end
+    r0_gradient!(g,x,problem);
+    g .= grad_obj .+ μ .* g .+ jac' * λ #can be taylored
+end
+
+
+function update_lag_mult!(x, μ, λ, problem::SEQUOIA_pb)
+    constraint_val = problem.constraints(x)
+    for i in problem.eqcon
+        λ[i] += μ * (constraint_val[i])
+    end
+    for i in problem.ineqcon
+        if constraint_val[i] > 0.0
+            λ[i] += μ * (constraint_val[i])
+        end
+    end
+end
