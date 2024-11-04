@@ -2,19 +2,18 @@ export SEQUOIA_Solution_step
 
 # Define solver statuses as a list of allowed symbols
 SolverStatus = [
-    :success,
-    :failed,
-    :exceeded_iter,
-    :exceeded_time,
-    :f_and_g_not_finite,
-    :stopped,
-    :invalid_start,
-    :not_converged,
-    :infeasibility_detected,
-    :positive_decrease,
-    :reached_ftol,
-    :reached_xtol,
-    :reached_gtol
+    :first_order,
+    :acceptable,
+    :max_iter,
+    :max_time,
+    :unbounded,
+    :infeasible,
+    :small_residual,
+    :small_step,
+    :stalled,
+    :unknown,
+    :user
+    #:invalid_start,
 ]
 
 """
@@ -96,7 +95,7 @@ struct SEQUOIA_Solution_step
         solution = new(outer_iteration_number, convergence_metric, solver_status, inner_comp_time, num_inner_iterations, x, fval, gval, cval, solver_params, x_iterates)
         
         # Validate the solution
-        validate_sequoia_solution!(solution) #For testing only, comment-out when releasing
+        #validate_sequoia_solution!(solution) #For testing only, comment-out when releasing
 
         # Return the valid solution
         return solution

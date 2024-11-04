@@ -42,7 +42,7 @@ function qpm_solve(problem::SEQUOIA_pb, inner_solver,options)
         fval = result.minimum  # Objective function value
         gval = problem.gradient(x)  # Gradient of the objective
         cval = problem.constraints(x)  # Constraint values
-        solver_status = Optim.converged(result) ? :success : :not_converged  # Solver status
+        solver_status = Optim.converged(result) ? :first_order : :unkown  # Solver status
         inner_comp_time = result.time_run  # Computation time
         num_inner_iterations = result.iterations  # Number of inner iterations
         x_tr = Optim.x_trace(result)  # This returns the history of iterates

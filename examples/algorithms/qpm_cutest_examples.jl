@@ -1,10 +1,12 @@
 using CUTEst, Sequoia, Optim
 
-problem=CUTEstModel("HS21");#BT1
+problem=CUTEstModel("HS37");#BT1
 
 sequoia_problem = cutest_to_sequoia(problem)
-#sol_hist=qpm_solve_cutest(problem,Optim.LBFGS(),Optim.Options(g_tol=1e-6, iterations=100, store_trace=true, extended_trace=true, show_trace=false))
-sol_hist = solve!(sequoia_problem);
-println("Solution history: ", sol_hist)# Access the solution history
+set_solver_settings!(sequoia_problem, SEQUOIA_Settings(:QPM_lite,:LBFGS,false,10^-6,1000,300, 10^-6))
+Sequoia.solve!(sequoia_problem);
+sol_hist = sequoia_problem.solution_history.iterates
+println("Solution history: ", sol_hist[end].x)# Access the solution history
 
-finalize(problem)
+
+#finalize(problem)

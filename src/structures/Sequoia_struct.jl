@@ -88,7 +88,7 @@ mutable struct SEQUOIA_pb
                         jacobian::Union{Nothing, Function} = nothing,
                         eqcon::Vector{Int} = Int[],
                         ineqcon::Vector{Int} = Int[],
-                        solver_settings::SEQUOIA_Settings = SEQUOIA_Settings(:QPM,:LBFGS,false,10^-6,1000,300),
+                        solver_settings::SEQUOIA_Settings = SEQUOIA_Settings(:QPM,:LBFGS,false,10^-6,1000,300,10^-6),
                         solution_history::SEQUOIA_History = SEQUOIA_History(),
                         exitCode::Symbol = :NotCalled,
                         cutest_nlp::Union{Nothing, CUTEst.CUTEstModel} = nothing)

@@ -64,7 +64,7 @@ function cutest_to_sequoia(cutest_problem::CUTEstModel)::SEQUOIA_pb
         cutest_nlp=cutest_problem
     )
     
-    validate_cutest_to_sequoia(pb,cutest_problem);
+    #validate_cutest_to_sequoia(pb,cutest_problem);
 
     return pb
 end

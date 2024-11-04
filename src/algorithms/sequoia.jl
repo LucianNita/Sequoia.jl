@@ -52,11 +52,11 @@ function sequoia_solve(problem::SEQUOIA_pb, inner_solver, options)
 
         if !isempty(below_tolerance)
             # Choose the one with the smallest t among those below tolerance
-            idx=findmin([(t, x, r, t) for (x, r, t) in below_tolerance])[2]
+            idx=findmin([t for (x, r, t) in below_tolerance])[2]
             (results,rs,ts)=below_tolerance[idx]
         else
             # Choose the one with the smallest r if none are below tolerance
-            idx=findmin([(r, x, r, t) for (x, r, t) in candidates])[2]
+            idx=findmin([r for (x, r, t) in candidates])[2]
             (results,rs,ts)=candidates[idx]
         end
 
@@ -90,7 +90,7 @@ function sequoia_solve(problem::SEQUOIA_pb, inner_solver, options)
             fval = result.minimum  # Objective function value
             gval = problem.gradient(x)  # Gradient of the objective
             cval = problem.constraints(x)  # Constraint values
-            solver_status = Optim.converged(result) ? :success : :not_converged  # Solver status
+            solver_status = Optim.converged(result) ? :first_order : :not_converged  # Solver status
             inner_comp_time = result.time_run  # Computation time
             num_inner_iterations = result.iterations  # Number of inner iterations
             x_tr = Optim.x_trace(result)  # This returns the history of iterates

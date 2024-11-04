@@ -1,40 +1,85 @@
-using LinearAlgebra
+# Interior Point Method (IPM) implementation
+function ipm_solve(problem::SEQUOIA_pb, inner_solver, options)
 
-# Define the barrier parameter (starting value)
-μ_initial = 1.0
+    # Initialize variables
+    penalty_init=problem.solver_settings.solver_params[1];
+    penalty_mult=problem.solver_settings.solver_params[2];
+    damping_factor=problem.solver_settings.solver_params[3];
+    rtol=problem.solver_settings.resid_tolerance;
+    x=vcat(problem.x0,ones(length(problem.ineqcon)));
 
-# Step size parameters for line search
-α = 0.01
-β = 0.5
+    iteration = 1  # Initialize iteration counter
+    time = 0.0 # Initialization of computational time
+    penalty_param = penalty_init  # Set initial penalty parameter
+    λ = problem.solver_settings.solver_params[5:end];  # Initialize or warm-start Lagrange multipliers
+    solution_history = SEQUOIA_History();  # Initialize the solution history
 
-# Tolerance for stopping condition
-tolerance = 1e-6
+    
 
-# Problem-specific functions
-function f(x)
-    return x[1]^2 + x[2]^2  # Example: minimize x1^2 + x2^2
+    while iteration < problem.solver_settings.max_iter_outer && time < problem.solver_settings.max_time_outer
+        if problem.cutest_nlp === nothing
+            obj_aug_fn = x -> ipm_obj(x, penalty_param, λ, problem)
+            grad_aug_fn! = (g, x) -> ipm_grad!(g, x, penalty_param, λ, problem)
+        else
+            obj_aug_fn = x -> ipm_obj(x, penalty_param, λ, problem.cutest_nlp)
+            grad_aug_fn! = (g, x) -> ipm_grad!(g, x, penalty_param, λ, problem.cutest_nlp)
+        end
+
+        # Solve the unconstrained subproblem
+        result = Optim.optimize(obj_aug_fn, grad_aug_fn!, x, inner_solver, options)
+        # Extract the optimized solution from the subproblem
+        x = result.minimizer
+
+        if problem.cutest_nlp === nothing
+            # Compute the constraint violation for adaptive updates
+            constraint_violation = exact_constraint_violation(x[1:problem.nvar],problem)
+        else
+            constraint_violation = exact_constraint_violation(x[1:problem.nvar],problem.cutest_nlp)
+        end
+
+        # Save a SEQUOIA_Solution_step after each optimize call
+        fval = result.minimum  # Objective function value
+        gval=zeros(length(x))
+        ipm_grad!(gval, x, penalty_param, λ, problem)
+        #gval = problem.gradient(x)  # Gradient of the objective
+        cval = problem.constraints(x[1:problem.nvar])  # Constraint values
+        solver_status = Optim.converged(result) ? :success : :not_converged  # Solver status
+        inner_comp_time = result.time_run  # Computation time
+        num_inner_iterations = result.iterations  # Number of inner iterations
+        x_tr = Optim.x_trace(result)  # This returns the history of iterates #result.g_residual 
+
+        conv=constraint_violation;
+
+        # Create a SEQUOIA_Solution_step and save it to history
+        step = SEQUOIA_Solution_step(iteration, conv, solver_status, inner_comp_time, num_inner_iterations, x, fval, gval, cval, vcat(penalty_param,λ), x_tr)
+        add_iterate!(solution_history, step)  # Add step to history
+        # Check for convergence
+        if constraint_violation < rtol
+            println("Converged after $iteration iterations.")
+            return solution_history
+        end
+
+        # Update Lagrange multipliers
+        update_ipm_mult!(x, penalty_param, λ, problem)
+
+
+        if problem.solver_settings.solver_params[4]==0
+            penalty_param *= penalty_mult;
+        else
+            penalty_param *= min(max(1, constraint_violation / rtol), damping_factor);
+        end 
+        
+        # Increment the iteration counter & time
+        iteration += 1
+        time+=inner_comp_time;
+    end
+
+    return solution_history
 end
 
-function ∇f(x)
-    return [2*x[1]; 2*x[2]]
-end
 
-function g(x)
-    return [x[1] - 1, x[2] - 1]  # Example: x1 - 1 ≤ 0, x2 - 1 ≤ 0
-end
-
-function ∇g(x)
-    return [1 0; 0 1]  # Gradient of constraints x1 - 1 and x2 - 1
-end
-
-function h(x)
-    return [x[1] + x[2] - 1]  # Example equality constraint: x1 + x2 = 1
-end
-
-function ∇h(x)
-    return [1 1]  # Gradient of equality constraint
-end
-
+##########################################################################################################################################
+#=
 # KKT System Solver with equality constraints and quadratic slack variables
 function solve_kkt_quadratic_slack(x, s, λ, ν, μ)
     # Assemble the KKT system
@@ -111,17 +156,4 @@ function interior_point_quadratic_slack_method(x0, s0, λ0, ν0, μ_initial)
 
     return x, s, λ, ν
 end
-
-# Initial guess
-x0 = [2.0, 2.0]  # Initial point for primal variables
-s0 = [1.0, 1.0]  # Initial slack variables (real values)
-λ0 = [0.5, 0.5]  # Initial Lagrange multipliers for inequality constraints
-ν0 = [0.5]       # Initial Lagrange multipliers for equality constraints
-
-# Run the interior point method with quadratic slack variables
-x_opt, s_opt, λ_opt, ν_opt = interior_point_quadratic_slack_method(x0, s0, λ0, ν0, μ_initial)
-
-println("Optimal x: ", x_opt)
-println("Optimal slack variables: ", s_opt)
-println("Optimal Lagrange multipliers for inequality constraints: ", λ_opt)
-println("Optimal Lagrange multipliers for equality constraints: ", ν_opt)
+=#
