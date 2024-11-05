@@ -33,7 +33,7 @@ function sequoia(
 )   
 
     sequoia_problem = cutest_to_sequoia(sqm)
-    set_solver_settings!(sequoia_problem, SEQUOIA_Settings(:QPM,:LBFGS,false,tol,1000,max_time,10^-6))
+    set_solver_settings!(sequoia_problem, SEQUOIA_Settings(:AugLag,:LBFGS,false,tol,1000,max_time,10^-6))
     
     start_time = time()
     Sequoia.solve!(sequoia_problem);
@@ -62,5 +62,5 @@ seq_solver =
 
 
 sequoia_stats = solve_problems(seq_solver, :sequoia, problems)
-@save "qpm_" * attrname * ".jld2" sequoia_stats
+@save "alm_" * attrname * ".jld2" sequoia_stats
 

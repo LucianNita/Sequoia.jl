@@ -605,64 +605,164 @@ function update_lag_mult!(x, μ, λ, problem::CUTEstModel)
 
 end
 
-function ipm_obj(x, μ, λ, problem::SEQUOIA_pb)
-    nv=problem.nvar;
-    constraint_val = problem.constraints(x[1:nv])
+function ipm_obj(x_a, μ, problem::SEQUOIA_pb)
+    x=x_a[1:problem.nvar];
+    iq=length(problem.ineqcon);
+    eq=length(problem.eqcon);
+    λ=x_a[problem.nvar+1:problem.nvar+iq+eq];
+    s=x_a[problem.nvar+iq+eq+1:end];
+    jac=problem.jacobian(x);
+    #display(s)
+    ν=λ[problem.ineqcon];
+    return norm(problem.gradient(x)+jac'*λ)^2+ r_slack(x,s,problem) + norm(2*ν.*s.^2 .-μ)^2 #+ sum(max(-λ[i], 0)^2 for i in 1:problem.ineqcon) + sum(λ[problem.ineqcon[i]] * (problem.constraints(x)[problem.ineqcon[i]]+s[i]^2)^2 for i in 1:iq)
+end
+
+function r_slack(x,s,problem::SEQUOIA_pb)
+    constraint_val = problem.constraints(x)
+    eq_penalty_term = 0.0;
+    ineq_penalty_term = 0.0;
+
+    # Handle equality constraints (penalty applied if violated)
+    for i in problem.eqcon
+        eq_penalty_term += (constraint_val[i])^2
+    end
+
+    # Handle inequality constraints (penalty applied if outside bounds)
+    for i in eachindex(problem.ineqcon)
+        ineq_penalty_term += (constraint_val[problem.ineqcon[i]]+s[i]^2)^2 
+    end
+
+    return eq_penalty_term + ineq_penalty_term
+end
+
+function ipm_grad!(g, x_a, μ, problem::SEQUOIA_pb)
+
+    #x=x_a[1:problem.nvar];
+    #λ=x_a[problem.nvar+1:problem.nvar+problem.ineqcon+problem.eqcon];
+    #s=x_a[problem.nvar+problem.ineqcon+problem.eqcon+1:end];
+
+    g[1:end] .= 0.0;
+
+    #grad_obj=problem.gradient
+    #jacobian=problem.jacobian(x);
+    #constraint_val = problem.constraints(x);
+    #ν = λ[problem.ineqcon];
+
+    g .= ForwardDiff.gradient(z -> ipm_obj(z, μ, problem), x_a)
+
+end
+
+function res(x,problem::CUTEstModel)
+    
+    jeq=length(problem.meta.jfix);
+    jlo=length(problem.meta.jlow);
+    jup=length(problem.meta.jupp);
+    jrg=length(problem.meta.jrng);
+    ieq=length(problem.meta.ifix);
+    ilo=length(problem.meta.ilow);
+    iup=length(problem.meta.iupp);
+    irg=length(problem.meta.irng);
+
+    violation=zeros(jeq+jlo+jup+2*jrg+ieq+ilo+iup+2*irg);
+    constraint_val = cons(problem, x)
+    
+    # Handle equality constraints (penalty applied if violated)
+    for i in 1:jeq
+        violation[i] = constraint_val[problem.meta.jfix[i]]-problem.meta.lcon[problem.meta.jfix[i]]
+    end
+    for i in 1:ieq
+        violation[jeq+i] = x[problem.meta.ifix[i]]-problem.meta.lvar[i]
+    end
+
+    # Handle inequality constraints (penalty applied if outside bounds)
+    for i in 1:jlo
+        violation[jeq+ieq+i] = problem.meta.lcon[problem.meta.jlow[i]]-constraint_val[problem.meta.jlow[i]]
+    end
+    for i in 1:ilo
+        violation[jeq+ieq+jlo+i] = problem.meta.lvar[problem.meta.ilow[i]]-x[problem.meta.ilow[i]]
+    end
+
+    for i in 1:jup
+        violation[jeq+ieq+jlo+ilo+i] = constraint_val[problem.meta.jupp[i]]-problem.meta.ucon[problem.meta.jupp[i]]
+    end
+    for i in 1:iup
+        violation[jeq+ieq+jlo+ilo+jup+i] = x[problem.meta.iupp[i]]-problem.meta.uvar[problem.meta.iupp[i]]
+    end
+
+    for i in 1:jrg
+        violation[jeq+ieq+jlo+ilo+jup+iup+i] = problem.meta.lcon[problem.meta.jrng[i]]-constraint_val[problem.meta.jrng[i]]
+        violation[jeq+ieq+jlo+ilo+jup+iup+jrg+i] = constraint_val[problem.meta.jrng[i]]-problem.meta.ucon[problem.meta.jrng[i]]   
+    end
+    for i in 1:irg
+        violation[jeq+ieq+jlo+ilo+jup+iup+2*jrg+i] = problem.meta.lvar[problem.meta.irng[i]]-x[problem.meta.irng[i]]
+        violation[jeq+ieq+jlo+ilo+jup+iup+2*jrg+jig+i] = x[problem.meta.irng[i]]-problem.meta.uvar[problem.meta.irng[i]]
+    end
+
+
+    return violation
+end
+
+function r_slack(x,s,problem::CUTEstModel)
+    cons=res(x,problem);
     sum=0.0;
-    lag_m=0.0;
-    for i in eachindex(problem.ineqcon)
-        sum+=1/μ*log(x[nv+i]^2+10^-1);
-        lag_m+=(constraint_val[problem.ineqcon[i]]+x[nv+i]^2)*λ[problem.ineqcon[i]]
+
+    jeq=length(problem.meta.jfix);
+    jlo=length(problem.meta.jlow);
+    jup=length(problem.meta.jupp);
+    jrg=length(problem.meta.jrng);
+    ieq=length(problem.meta.ifix);
+    ilo=length(problem.meta.ilow);
+    iup=length(problem.meta.iupp);
+    irg=length(problem.meta.irng);
+
+    for i in 1:jeq+ieq
+        sum +=cons[i]^2;
     end
-    return problem.objective(x[1:nv]) - sum + lag_m + constraint_val[problem.eqcon]' * λ[problem.eqcon]
+    for i in 1:jlo+ilo+jup+iup+2*jrg+2*irg
+        sum +=(cons[i+jeq+ieq]+s[i]^2)^2
+    end
+    return sum
 end
 
-function ipm_grad!(g, x, μ, λ, problem::SEQUOIA_pb)
+function ipm_obj(x_a, μ, problem::CUTEstModel)
+    x=x_a[1:problem.nvar];
+    jeq=length(problem.meta.jfix);
+    jlo=length(problem.meta.jlow);
+    jup=length(problem.meta.jupp);
+    jrg=length(problem.meta.jrng);
+    ieq=length(problem.meta.ifix);
+    ilo=length(problem.meta.ilow);
+    iup=length(problem.meta.iupp);
+    irg=length(problem.meta.irng);
 
-    nv = problem.nvar  # Number of original variables
-    n_slack = length(problem.ineqcon)  # Number of slack variables
+    eq=jeq+ieq;
+    iq=jlo+ilo+jup+iup+2*jrg+2*irg;
 
-    grad_obj = problem.gradient(x[1:nv]);
-    g[1:nv] .= grad_obj
-    g[nv+1:end] .= 0.0  # Initialize slack gradient to zero
+    λ=x_a[problem.nvar+1:problem.nvar+iq+eq];
+    s=x_a[problem.nvar+iq+eq+1:end];
+    jac=problem.jacobian(x);
+    ν=λ[eq+1:eq+iq];
 
-    jacobian=problem.jacobian(x[1:nv]);
-    constraint_val = problem.constraints(x[1:nv]);
-
-    for i in 1:n_slack
-        s_i = x[nv + i]
-        g[nv + i] -= 2.0 / (μ * s_i)  # Log barrier term for slack
-    end
-
-    # Gradient of the inequality constraints with respect to x and slack
-    for i in eachindex(problem.ineqcon)
-        idx = problem.ineqcon[i]
-        s_i = x[nv + i]
-        g[1:nv] .+= λ[idx] * jacobian[idx, :] # λ * ∇g_i(x)
-        g[nv + i] += 2 * λ[idx] * s_i  # λ * 2s_i
-    end
-
-    # Gradient of the equality constraints with respect to x
-    for j in eachindex(problem.eqcon)
-        idx = problem.eqcon[j]
-        g[1:nv] .+= λ[idx] * jacobian[idx, :]  # λ * ∇h_j(x)
-    end
-
+    return norm(problem.gradient(x)+jac'*λ)^2 + r_slack(x,s,problem) + norm(2*ν.*s.^2 .-μ)^2
 end
 
-function update_ipm_mult!(x, μ, λ, problem::SEQUOIA_pb)
-    nv = problem.nvar  # Number of original variables
-    constraint_val = problem.constraints(x[1:nv])
-    # Update multipliers for equality constraints
-    for j in eachindex(problem.eqcon)
-        idx = problem.eqcon[j]
-        λ[idx] += μ * constraint_val[idx]  # λ_j = λ_j + μ * h_j(x)
-    end
+function ipm_grad!(g, x_a, μ, problem::CUTEstModel)
 
-    # Update multipliers for inequality constraints with slack
-    for i in eachindex(problem.ineqcon)
-        idx = problem.ineqcon[i]
-        s_i = x[nv + i]
-        λ[idx] += μ * (constraint_val[idx] + s_i^2)  # λ_i = λ_i + μ * (g_i(x) + s_i^2)
-    end
+    x=x_a[1:problem.nvar];
+    jeq=length(problem.meta.jfix);
+    jlo=length(problem.meta.jlow);
+    jup=length(problem.meta.jupp);
+    jrg=length(problem.meta.jrng);
+    ieq=length(problem.meta.ifix);
+    ilo=length(problem.meta.ilow);
+    iup=length(problem.meta.iupp);
+    irg=length(problem.meta.irng);
+
+    eq=jeq+ieq;
+    iq=jlo+ilo+jup+iup+2*jrg+2*irg;
+
+    λ=x_a[problem.nvar+1:problem.nvar+iq+eq];
+    s=x_a[problem.nvar+iq+eq+1:end];
+
+    Hx = hess(problem, x; y=)
 end

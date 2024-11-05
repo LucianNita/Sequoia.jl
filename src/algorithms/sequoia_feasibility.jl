@@ -19,7 +19,7 @@ function feasibility_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x,
     solver_status = Optim.converged(result) ? :small_residual : :infeasible  # Solver status
 
     # Create a SEQUOIA_Solution_step and save it to history
-    step = SEQUOIA_Solution_step(0, conv, solver_status, result.time_run, result.iterations , x, result.minimum, grad(problem,x), cons(problem,x))
+    step = SEQUOIA_Solution_step(0, result.minimum, solver_status, result.time_run, result.iterations , x, result.minimum, problem.gradient(x), problem.constraints(x))
     add_iterate!(problem.solution_history, step)  # Add step to history
 
     return time, x, previous_fval

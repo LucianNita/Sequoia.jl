@@ -4,7 +4,7 @@ export SEQUOIA_Settings
 inner_solvers = [:LBFGS, :BFGS, :Newton, :GradientDescent, :NelderMead]
 
 # List of valid outer methods
-outer_methods = [:QPM, :AugLag, :IntPt, :SEQUOIA, :QPM_lite, :AugLag_lite, :IntPt_lite, :SEQUOIA_lite]
+outer_methods = [:QPM, :AugLag, :IntPt, :SEQUOIA]
 
 # List of valid convergence criteria
 convergence_criterias = [
@@ -77,6 +77,7 @@ mutable struct SEQUOIA_Settings
     conv_crit::Symbol                              # Convergence criterion for the inner solve (:GradientNorm, etc.).
     max_iter_inner::Union{Nothing, Int}            # Maximum number of inner iterations allowed.
     max_time_inner::Union{Nothing, Real}           # Maximum computational time for each inner solve call (in seconds).
+    store_trace::Bool                              # Store partial iteration data or not?
 
     cost_tolerance::Union{Nothing, Real}           # Desired optimality gap.
     cost_min::Union{Nothing, Real}                 # Minimum cost - useful for spotting possible unbounded problems.
@@ -108,7 +109,7 @@ mutable struct SEQUOIA_Settings
     """
     function SEQUOIA_Settings(outer_method::Symbol, inner_solver::Symbol, feasibility::Bool, 
                               resid_tolerance::Real, max_iter_outer::Int, max_time_outer::Real, gtol::Real,
-                              conv_crit::Symbol, max_iter_inner::Union{Nothing, Int}, max_time_inner::Union{Nothing, Real}, 
+                              conv_crit::Symbol, max_iter_inner::Union{Nothing, Int}, max_time_inner::Union{Nothing, Real}, store_trace::Bool,
                               cost_tolerance::Union{Nothing, Real}, cost_min::Union{Nothing, Real}, 
                               solver_params::Union{Nothing, Vector{Float64}} = nothing)
         
@@ -116,7 +117,7 @@ mutable struct SEQUOIA_Settings
         # Create a new instance
         settings = new(outer_method, inner_solver, feasibility, 
                        resid_tolerance, max_iter_outer, max_time_outer, gtol,
-                       conv_crit, max_iter_inner, max_time_inner, 
+                       conv_crit, max_iter_inner, max_time_inner, store_trace,
                        cost_tolerance, cost_min, solver_params)
         
         # Call the validation function to apply defaults and check values
@@ -144,7 +145,7 @@ mutable struct SEQUOIA_Settings
         # Create a new instance with default values for the unspecified fields
         settings = new(outer_method, inner_solver, feasibility, 
                        resid_tolerance, max_iter_outer, max_time_outer, gtol,
-                       :GradientNorm, nothing, nothing, nothing, nothing, nothing)
+                       :GradientNorm, nothing, nothing, false, nothing, nothing, nothing)
 
         # Call the validation function to apply defaults and check values
         validate_sequoia_settings!(settings)
