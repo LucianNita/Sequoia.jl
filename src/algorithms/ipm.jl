@@ -13,7 +13,7 @@ function ipm_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previou
     if problem.cutest_nlp === nothing
         s = ones(length(problem.ineqcon))
     else
-        s = ones(ncon-length(problem.cutest_nlp.meta.ifix)-length(problem.cutest_nlp.meta.jfix))
+        s = ones(n_con-length(problem.cutest_nlp.meta.ifix)-length(problem.cutest_nlp.meta.jfix))
     end
     
     result=nothing;
