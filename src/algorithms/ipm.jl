@@ -46,8 +46,9 @@ function ipm_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previou
         # Save a SEQUOIA_Solution_step after each optimize call
         fval = problem.objective(x)  # Objective function value
         time+= result.time_run  # Computation time
+
         
-        conv = constraint_violation < problem.solver_settings.resid_tolerance && Optim.converged(result) && abs(fval - previous_fval) < problem.solver_settings.cost_tolerance #/(max(1.0,abs(previous_fval)))
+        conv = Optim.converged(result) && abs(fval - previous_fval) < problem.solver_settings.cost_tolerance #/(max(1.0,abs(previous_fval)))#constraint_violation < problem.solver_settings.resid_tolerance && 
         if conv
             if problem.solver_settings.store_trace
                 x_tr=Optim.x_trace(result);
@@ -91,7 +92,7 @@ function ipm_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previou
     if problem.solver_settings.store_trace
         problem.solution_history.iterates[end].solver_status=solver_status;
     else
-        step = SEQUOIA_Solution_step(iteration, abs(result.minimum - previous_fval), solver_status, result.time_run, result.iterations, result.minimizer[1:problem.nvar], result.minimum, problem.gradient(x), problem.constraints(result.minimizer), vcat(penalty_param,λ,s))
+        step = SEQUOIA_Solution_step(iteration, abs(result.minimum - previous_fval), solver_status, result.time_run, result.iterations, result.minimizer[1:problem.nvar], result.minimum, problem.gradient(x[1:problem.nvar]), problem.constraints(result.minimizer[1:problem.nvar]), vcat(penalty_param,λ,s))
         add_iterate!(problem.solution_history, step)  # Add step to history
     end    
 

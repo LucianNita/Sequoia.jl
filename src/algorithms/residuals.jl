@@ -1,6 +1,6 @@
 export r0, r0_gradient!, r, r_gradient!, exact_constraint_violation, exact_augmented_constraint_violation,
        qpm_obj, qpm_grad!, r0_gradient!, auglag_obj, auglag_grad!, update_lag_mult!,
-       ipm_obj, ipm_grad!, update_ipm_mult!
+       ipm_obj, ipm_grad!, update_ipm_mult!, res
        
 function r0(x,problem::CUTEstModel)
     constraint_val = cons(problem, x)
@@ -811,6 +811,20 @@ function ipm_grad!(g, x_a, μ, problem::CUTEstModel)
         c[problem.meta.jrng[i]] += -(cons[jeq+ieq+jlo+ilo+jup+iup+i]+s[jlo+ilo+jup+iup+i]^2) + (cons[jeq+ieq+jlo+ilo+jup+iup+jrg+i]+s[jlo+ilo+jup+iup+jrg+i]^2)
     end
 
+    cvar=zeros(problem.meta.nvar);
+    for i in 1:ieq
+        cvar[problem.meta.ifix[i]] += cons[jeq+i]
+    end
+    for i in 1:ilo
+        cvar[problem.meta.ilow[i]] += -(cons[jeq+ieq+jlo+i]+s[jlo+i]^2)
+    end
+    for i in 1:iup
+        cvar[problem.meta.iupp[i]] += (cons[jeq+ieq+jlo+ilo+jupp+i]+s[jlo+ilo+jupp+i]^2)
+    end
+    for i in 1:irg
+        cvar[problem.meta.irng[i]] += -(cons[jeq+ieq+jlo+ilo+jup+iup+2*jrg+i]+s[jlo+ilo+jup+iup+2*jrg+i]^2) + (cons[jeq+ieq+jlo+ilo+jup+iup+2*jrg+irg+i]+s[jlo+ilo+jup+iup+2*jrg+irg+i]^2)
+    end
+
     dlambda=zeros(length(λ));
 
     for i in 1:ieq
@@ -853,9 +867,9 @@ function ipm_grad!(g, x_a, μ, problem::CUTEstModel)
     end
     #display(2*Jacobian'*c)
 
-
-    g[1:problem.meta.nvar] = 2*transpose(Hx)*(L) + 2*Jacobian'*c
+    g[1:problem.meta.nvar] = 2*transpose(Hx)*(L) + 2*Jacobian'*c +2*cvar
     g[problem.meta.nvar+1:problem.meta.nvar+length(λ)] = dlambda
     g[problem.meta.nvar+length(λ)+1:problem.meta.nvar+length(λ)+length(s)] = ds
+
 
 end
