@@ -13,6 +13,7 @@ function solve!(problem::SEQUOIA_pb)
 
     x = problem.x0
     iteration = 0;
+    inner_iterations = 0;
     time = 0.0 # Initialization of computational time
     problem.solution_history = SEQUOIA_History()  # Initialize the solution history
     previous_fval = Inf  # Store the previous objective function value
@@ -69,7 +70,8 @@ function solve!(problem::SEQUOIA_pb)
         elseif length(problem.solver_settings.solver_params) != 3
             throw(ArgumentError("Number of solver parameters is incompatible with the solver. Current solver chosen $(problem.solver_settings.outer_method). Number of expected parameters 3, got $(length(problem.solver_settings.solver_params)). Please modify the settings by either choosing a different solver, providing an appropriate number of parameters, or leaving the optional field free."))
         end
-        time, x, previous_fval, iteration = sequoia_solve!(problem, inner_solver, options, time, x, previous_fval, iteration)
+        time, x, previous_fval, iteration = sequoia_solve!(problem, inner_solver, options, time, x, previous_fval, iteration, inner_iterations)
+
 
     else
         error("The provided outer_method is not supported. Only QPM, AugLag are implemented.")

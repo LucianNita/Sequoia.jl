@@ -33,20 +33,20 @@ function sequoia(
 )   
 
     sequoia_problem = cutest_to_sequoia(sqm)
-    set_solver_settings!(sequoia_problem, SEQUOIA_Settings(:SEQUOIA,:LBFGS,false,tol,1000,max_time))
+    set_solver_settings!(sequoia_problem, SEQUOIA_Settings(:SEQUOIA,:LBFGS,true,tol,1000,max_time,10^-6))
     
     start_time = time()
-    sol_hist = Sequoia.solve!(sequoia_problem);
+    Sequoia.solve!(sequoia_problem);
 
     el_time = time() - start_time
 
     return GenericExecutionStats(
         sqm,
-        status = sol_hist.iterates[end].solver_status,
-        solution = sol_hist.iterates[end].x,
-        iter = sol_hist.iterates[end].outer_iteration_number,
-        primal_feas = sol_hist.iterates[end].cval[1],
-        objective = sol_hist.iterates[end].fval,
+        status = sequoia_problem.solution_history.iterates[end].solver_status,
+        solution = sequoia_problem.solution_history.iterates[end].x,
+        iter = sequoia_problem.solution_history.iterates[end].outer_iteration_number,
+        primal_feas = sequoia_problem.solution_history.iterates[end].cval[1],
+        objective = sequoia_problem.solution_history.iterates[end].fval,
         elapsed_time = el_time
     )
 
