@@ -114,7 +114,8 @@ This example demonstrates how the fallback method for `get_all` handles invalid 
 # Expected Output:
     Error: Expected `SEQUOIA_History`, but got `String`.
     Error: Invalid field: `invalid_field`. Valid fields are: (:outer_iteration_number, :convergence_metric, :solver_status, :inner_comp_time, :num_inner_iterations, :x, :fval, :gval, :cval, :solver_params, :x_iterates)
-"""
+    Error: Invalid input: `field` must be of type `Symbol`.
+    """
 function example_invalid_fields()
     history = SEQUOIA_History([
         SEQUOIA_Solution_step(1, 0.01, :first_order, 0.1, 5, [0.5, 1.0], -10.0, [0.0, 0.0])
@@ -128,6 +129,12 @@ function example_invalid_fields()
 
     try
         get_all(history, :invalid_field)  # Invalid field
+    catch e
+        println("Error: ", e)
+    end
+
+    try
+        get_all(history, "invalid_field")  # Invalid field type
     catch e
         println("Error: ", e)
     end

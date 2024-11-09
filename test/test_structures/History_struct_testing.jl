@@ -66,5 +66,8 @@
 
         # Invalid field name
         @test_throws ArgumentError get_all(history, :invalid_field)
+
+        # Invalid field type
+        @test_throws ArgumentError get_all(history, "invalid_field")
     end
 end
