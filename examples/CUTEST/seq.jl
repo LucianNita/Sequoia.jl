@@ -33,8 +33,9 @@ function sequoia(
 )   
 
     sequoia_problem = cutest_to_sequoia(sqm)
-    set_solver_settings!(sequoia_problem, SEQUOIA_Settings(:SEQUOIA,:LBFGS,true,tol,1000,max_time,10^-6))
-    
+    set_solver_settings!(sequoia_problem, SEQUOIA_Settings(:SEQUOIA,:LBFGS,false,tol,1000,max_time,10^-6))
+    sequoia_problem.solver_settings.cost_tolerance=10^-6
+    sequoia_problem.solver_settings.cost_min=-10^12
     start_time = time()
     Sequoia.solve!(sequoia_problem);
 

@@ -9,11 +9,12 @@
             1e-6,              # Residual tolerance
             1000,              # Max iterations for outer solver
             3600.0,            # Max time for outer solver
-            :MaxIterations,    # Convergence criterion
-            500,               # Max iterations for inner solver
-            300.0,             # Max time for inner solver
-            nothing,           # No cost tolerance specified
-            nothing            # No cost minimum specified
+            1e-5;              # Gradient tolerance
+            conv_crit = :MaxIterations,
+            max_iter_inner = 500,
+            max_time_inner = 300.0,
+            cost_tolerance = nothing,
+            cost_min = nothing
         )
         validate_sequoia_settings!(settings)
         @test settings.cost_tolerance == 1e-4   # Default cost tolerance applied
@@ -29,11 +30,12 @@
             1e-6,              # Residual tolerance
             1000,              # Max iterations for outer solver
             3600.0,            # Max time for outer solver
-            :InvalidCrit,      # Invalid convergence criterion
-            500,               # Max iterations for inner solver
-            300.0,             # Max time for inner solver
-            1e-4,              # Cost tolerance
-            -1e6               # Min cost
+            1e-5;              # Gradient tolerance
+            conv_crit = :InvalidCrit,
+            max_iter_inner = 500,
+            max_time_inner = 300.0,
+            cost_tolerance = 1e-4,
+            cost_min = -1e6
         )
     end
 
@@ -47,11 +49,12 @@
             1e-6,              # Residual tolerance
             1000,              # Max iterations for outer solver
             3600.0,            # Max time for outer solver
-            :MaxIterations,    # Convergence based on iterations
-            nothing,           # Max iterations for inner solver not specified
-            300.0,             # Max time for inner solver
-            1e-4,              # Cost tolerance
-            -1e6               # Min cost
+            1e-5;              # Gradient tolerance
+            conv_crit = :MaxIterations,
+            max_iter_inner = nothing,
+            max_time_inner = 300.0,
+            cost_tolerance = 1e-4,
+            cost_min = -1e6
         )
         validate_sequoia_settings!(settings_iter)
         @test settings_iter.max_iter_inner == 500  # Default inner iterations set to 500
@@ -64,11 +67,12 @@
             1e-6,              # Residual tolerance
             1000,              # Max iterations for outer solver
             3600.0,            # Max time for outer solver
-            :MaxTime,          # Convergence based on time
-            500,               # Max iterations for inner solver
-            nothing,           # Max time for inner solver not specified
-            1e-4,              # Cost tolerance
-            -1e6               # Min cost
+            1e-5;              # Gradient tolerance
+            conv_crit = :MaxTime,
+            max_iter_inner = 500,
+            max_time_inner = nothing,
+            cost_tolerance = 1e-4,
+            cost_min = -1e6
         )
         validate_sequoia_settings!(settings_time)
         @test settings_time.max_time_inner == 60.0  # Default inner time set to 60 seconds
@@ -76,20 +80,21 @@
 
     # Test validation for solver parameters
     @testset "Invalid Solver Parameters" begin
-        # Test that invalid solver_params (non-Float64) raises an ArgumentError
-        @test_throws MethodError SEQUOIA_Settings(
+        # Test that invalid solver_params (not a vector of Float64) raises a TypeError
+        @test_throws TypeError SEQUOIA_Settings(
             :SEQUOIA,          # Outer method
             :LBFGS,            # Inner solver
             false,             # Feasibility
             1e-6,              # Residual tolerance
             1000,              # Max iterations for outer solver
             3600.0,            # Max time for outer solver
-            :GradientNorm,     # Convergence criterion
-            500,               # Max iterations for inner solver
-            300.0,             # Max time for inner solver
-            1e-4,              # Cost tolerance
-            -1e6,              # Min cost
-            [1.0, "invalid"]   # Invalid solver parameters (non-Float64)
+            1e-5;              # Gradient tolerance
+            conv_crit = :GradientNorm,
+            max_iter_inner = 500,
+            max_time_inner = 300.0,
+            cost_tolerance = 1e-4,
+            cost_min = -1e6,
+            solver_params = [1.0, "invalid"]  # Invalid solver parameters (non-Float64)
         )
     end
 
@@ -103,11 +108,12 @@
             1e-6,              # Residual tolerance
             0,                 # Invalid: zero max iterations for outer solver
             3600.0,            # Max time for outer solver
-            :MaxIterations,    # Convergence based on iterations
-            500,               # Max iterations for inner solver
-            300.0,             # Max time for inner solver
-            1e-4,              # Cost tolerance
-            -1e6               # Min cost
+            1e-5;              # Gradient tolerance
+            conv_crit = :MaxIterations,
+            max_iter_inner = 500,
+            max_time_inner = 300.0,
+            cost_tolerance = 1e-4,
+            cost_min = -1e6
         )
 
         # Test validation that max_time_outer must be non-negative
@@ -118,11 +124,12 @@
             1e-6,              # Residual tolerance
             1000,              # Max iterations for outer solver
             -1.0,              # Invalid: negative max time for outer solver
-            :MaxIterations,    # Convergence based on iterations
-            500,               # Max iterations for inner solver
-            300.0,             # Max time for inner solver
-            1e-4,              # Cost tolerance
-            -1e6               # Min cost
+            1e-5;              # Gradient tolerance
+            conv_crit = :MaxIterations,
+            max_iter_inner = 500,
+            max_time_inner = 300.0,
+            cost_tolerance = 1e-4,
+            cost_min = -1e6
         )
     end
 end

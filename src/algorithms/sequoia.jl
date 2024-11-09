@@ -57,7 +57,7 @@ function sequoia_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, tk,
             add_iterate!(problem.solution_history, step)  # Add step to history#
 
             return time, x, tk, iteration
-        elseif dk<problem.solver_settings.cost_tolerance && rk > problem.solver_settings.resid_tolerance
+        elseif dk<10^(-16) && rk > problem.solver_settings.resid_tolerance #problem.solver_settings.cost_tolerance
             problem.solver_settings.store_trace && (x_tr=vcat(Optim.x_trace(resultl),Optim.x_trace(resultu)))
             step = SEQUOIA_Solution_step(iteration, dk, :small_step, time, inner_iterations, x, rk, problem.gradient(x), problem.constraints(x), [tk], x_tr)
             add_iterate!(problem.solution_history, step)  # Add step to history#
