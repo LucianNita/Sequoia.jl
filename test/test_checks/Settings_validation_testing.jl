@@ -132,4 +132,168 @@
             cost_min = -1e6
         )
     end
+
+    # Test validate_inner_solver
+    @testset "Test Inner Solvers" begin
+        # Test valid inner solvers
+        for solver in [:LBFGS, :BFGS, :Newton, :GradientDescent, :NelderMead]
+            # Construct settings with a valid inner solver
+            settings = SEQUOIA_Settings(
+                :SEQUOIA, solver, false, 1e-6, 1000, 3600.0, 1e-5; 
+            )
+            # Validate settings should pass without error
+            @test validate_sequoia_settings!(settings) === nothing
+        end
+
+        # Test invalid inner solver
+        @test_throws ArgumentError begin
+            settings = SEQUOIA_Settings(
+                :SEQUOIA, :InvalidSolver, false, 1e-6, 1000, 3600.0, 1e-5;
+            )
+            validate_sequoia_settings!(settings)
+        end
+    end
+
+    # Test validate_outer_method
+    @testset "Test Outer Method" begin
+        # Test valid outer methods
+        for method in [:SEQUOIA, :QPM, :AugLag, :IntPt]
+            # Construct settings with a valid outer method
+            settings = SEQUOIA_Settings(
+                method, :LBFGS, false, 1e-6, 1000, 3600.0, 1e-5; 
+            )
+            # Validate settings should pass without error
+            @test validate_sequoia_settings!(settings) === nothing
+        end
+
+        # Test invalid outer method
+        @test_throws ArgumentError begin
+            settings = SEQUOIA_Settings(
+                :InvalidMethod, :LBFGS, false, 1e-6, 1000, 3600.0, 1e-5;
+            )
+            validate_sequoia_settings!(settings)
+        end
+    end
+
+    # Test validate_numeric
+    @testset "Test validate numeric" begin
+        # Test valid numeric settings
+        settings = SEQUOIA_Settings(
+            :SEQUOIA, :LBFGS, false, 1e-6, 1000, 3600.0, 1e-5; 
+            conv_crit = :GradientNorm,
+            max_iter_inner = 500,
+            max_time_inner = 300.0,
+            cost_tolerance = 1e-4,
+            cost_min = -1e6
+        )
+        @test validate_sequoia_settings!(settings) === nothing
+
+        # Test invalid residual tolerance
+        @test_throws ArgumentError begin
+            settings = SEQUOIA_Settings(
+                :SEQUOIA, :LBFGS, false, -1e-6, 1000, 3600.0, 1e-5; 
+                conv_crit = :GradientNorm,
+                max_iter_inner = 500,
+                max_time_inner = 300.0,
+                cost_tolerance = 1e-4,
+                cost_min = -1e6
+            )
+            validate_sequoia_settings!(settings)
+        end
+
+        # Test invalid max_time_outer
+        @test_throws ArgumentError begin
+            settings = SEQUOIA_Settings(
+                :SEQUOIA, :LBFGS, false, 1e-6, 1000, -3600.0, 1e-5; 
+                conv_crit = :GradientNorm,
+                max_iter_inner = 500,
+                max_time_inner = 300.0,
+                cost_tolerance = 1e-4,
+                cost_min = -1e6
+            )
+            validate_sequoia_settings!(settings)
+        end
+
+        # Test invalid max_iter_inner
+        @test_throws ArgumentError begin
+            settings = SEQUOIA_Settings(
+                :SEQUOIA, :LBFGS, false, 1e-6, 1000, 3600.0, 1e-5; 
+                conv_crit = :GradientNorm,
+                max_iter_inner = -500,
+                max_time_inner = 300.0,
+                cost_tolerance = 1e-4,
+                cost_min = -1e6
+            )
+            validate_sequoia_settings!(settings)
+        end
+
+        # Test invalid max_time_inner
+        @test_throws ArgumentError begin
+            settings = SEQUOIA_Settings(
+                :SEQUOIA, :LBFGS, false, 1e-6, 1000, 3600.0, 1e-5; 
+                conv_crit = :GradientNorm,
+                max_iter_inner = 500,
+                max_time_inner = -300.0,
+                cost_tolerance = 1e-4,
+                cost_min = -1e6
+            )
+            validate_sequoia_settings!(settings)
+        end
+
+        # Test invalid cost_tolerance
+        @test_throws ArgumentError begin
+            settings = SEQUOIA_Settings(
+                :SEQUOIA, :LBFGS, false, 1e-6, 1000, 3600.0, 1e-5; 
+                conv_crit = :GradientNorm,
+                max_iter_inner = 500,
+                max_time_inner = 300.0,
+                cost_tolerance = -1e-4,
+                cost_min = -1e6
+            )
+            validate_sequoia_settings!(settings)
+        end
+
+        # Test excessively low cost_min
+        @test_throws ArgumentError begin
+            settings = SEQUOIA_Settings(
+                :SEQUOIA, :LBFGS, false, 1e-6, 1000, 3600.0, 1e-5; 
+                conv_crit = :GradientNorm,
+                max_iter_inner = 500,
+                max_time_inner = 300.0,
+                cost_tolerance = 1e-4,
+                cost_min = -1e30
+            )
+            validate_sequoia_settings!(settings)
+        end
+
+        # Test excessively large step_min
+        @test_throws ArgumentError begin
+            settings = SEQUOIA_Settings(
+                :SEQUOIA, :LBFGS, false, 1e-6, 1000, 3600.0, 1e-5; 
+                conv_crit = :GradientNorm,
+                max_iter_inner = 500,
+                max_time_inner = 300.0,
+                cost_tolerance = 1e-4,
+                cost_min = -1e10,
+                step_min = 1e-2
+            )
+            validate_sequoia_settings!(settings)
+        end
+
+        # Test excessively small step_min
+        @test_throws ArgumentError begin
+            settings = SEQUOIA_Settings(
+                :SEQUOIA, :LBFGS, false, 1e-6, 1000, 3600.0, 1e-5; 
+                conv_crit = :GradientNorm,
+                max_iter_inner = 500,
+                max_time_inner = 300.0,
+                cost_tolerance = 1e-4,
+                cost_min = -1e10,
+                step_min = 1e-30
+            )
+            validate_sequoia_settings!(settings)
+        end
+    end
+
+
 end
