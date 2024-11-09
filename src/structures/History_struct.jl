@@ -1,5 +1,4 @@
-export SEQUOIA_History
-export add_iterate!, get_all
+export SEQUOIA_History, add_iterate!, get_all, clear_history!
 
 """
     SEQUOIA_History
@@ -9,60 +8,64 @@ This struct stores a collection of solution steps (`SEQUOIA_Solution_step`) obta
 # Fields
 
 - `iterates::Vector{SEQUOIA_Solution_step}`: A vector that holds multiple iteration steps, each represented by a `SEQUOIA_Solution_step`.
+
+# Constructor
+
+## Default Constructor
+    SEQUOIA_History()
+
+Creates an empty instance of `SEQUOIA_History`.
+
+## With Initial Iterates
+    SEQUOIA_History(iterates::Vector{SEQUOIA_Solution_step})
+
+Creates a `SEQUOIA_History` with pre-populated iterates.
 """
 struct SEQUOIA_History
     iterates::Vector{SEQUOIA_Solution_step}  # A vector to hold multiple iteration steps
 
-    # Constructor to initialize an empty SEQUOIA_History
+    # Default constructor for an empty history
     SEQUOIA_History() = new(Vector{SEQUOIA_Solution_step}())
+
+    # Constructor for initializing with pre-existing iterates
+    SEQUOIA_History(iterates::Vector{SEQUOIA_Solution_step}) = new(iterates)
 end
 
+
+# Methods for SEQUOIA_History
 """
     add_iterate!(history::SEQUOIA_History, iterate::SEQUOIA_Solution_step)
 
-Add a new `SEQUOIA_Solution_step` (an iteration step) to the `SEQUOIA_History` collection.
+Adds a new `SEQUOIA_Solution_step` to the `SEQUOIA_History` collection.
 
 # Arguments
+- `history::SEQUOIA_History`: The history to add the iterate to.
+- `iterate::SEQUOIA_Solution_step`: The solution step to add.
 
-- `history::SEQUOIA_History`: An instance of `SEQUOIA_History` that holds the collection of solution steps.
-- `iterate::SEQUOIA_Solution_step`: A `SEQUOIA_Solution_step` to be added to the `history`.
+# Returns
+- The updated `SEQUOIA_History` instance.
+
+# Throws
+- `ArgumentError` if inputs are invalid.
 """
 function add_iterate!(history::SEQUOIA_History, iterate::SEQUOIA_Solution_step)
     push!(history.iterates, iterate)
 end
 
 """
-    add_iterate!(history, iterate)
-
-Just a fallback method. This function validates the inputs and ensures that the history and iterate are of the correct types. It only dispatches on this if the types are incorrect. Otherwise, Julia's multiple dispatch, dispatches on the most specific type (which is the function actually performing the task)
-
-# Arguments
-
-- `history`: The instance of `SEQUOIA_History` to validate.
-- `iterate`: The instance of `SEQUOIA_Solution_step` to validate.
-
-# Throws
-
-- `ArgumentError` if `history` is not of type `SEQUOIA_History` or if `iterate` is not of type `SEQUOIA_Solution_step`.
-"""
-function add_iterate!(history::Any, iterate::Any)
-    validate_history(history)
-    validate_iterate(iterate)
-end
-
-# Function to extract specific information
-"""
     get_all(history::SEQUOIA_History, field::Symbol) -> Vector{Any}
 
-Retrieve all values for a specified field from each iterate in `SEQUOIA_History`.
+Retrieves all values for a specified field from each iterate in the `SEQUOIA_History`.
 
 # Arguments
-
-- `history::SEQUOIA_History`: An instance of `SEQUOIA_History` holding the collection of solution iterates.
-- `field::Symbol`: The name of the field to retrieve values from (e.g., `:x`, `:fval`, `:gval`).
+- `history::SEQUOIA_History`: The history to extract values from.
+- `field::Symbol`: The name of the field to retrieve.
 
 # Returns
-A vector of values for the specified field from each iterate.
+- A vector of values for the specified field from each iterate.
+
+# Throws
+- `ArgumentError` if inputs are invalid.
 """
 function get_all(history::SEQUOIA_History, field::Symbol)
     validate_field(field)
@@ -70,18 +73,49 @@ function get_all(history::SEQUOIA_History, field::Symbol)
 end
 
 """
-    get_all(history, field)
+    clear_history!(history::SEQUOIA_History)
 
-Just a fallback method. This function first validates the `history` and `field` inputs, ensuring that the history is of the correct type and the field is a valid field of `SEQUOIA_Solution_step`. It only dispatches on this if the types are incorrect. Otherwise, Julia's multiple dispatch, dispatches on the most specific type (which is the function actually performing the task)
+Clears all iterates in the `SEQUOIA_History`.
 
 # Arguments
+- `history::SEQUOIA_History`: The history to clear.
 
-- `history`: The instance of `SEQUOIA_History` to validate.
-- `field`: The field to extract from the iterates, validated to be a valid field of `SEQUOIA_Solution_step`.
+# Returns
+- The cleared `SEQUOIA_History` instance.
+"""
+function clear_history!(history::SEQUOIA_History)
+    empty!(history.iterates)
+end
+
+# Fallback Methods
+"""
+    add_iterate!(history::Any, iterate::Any)
+
+Fallback method to validate inputs before adding an iterate to a history.
+
+# Arguments
+- `history`: Input to validate as `SEQUOIA_History`.
+- `iterate`: Input to validate as `SEQUOIA_Solution_step`.
 
 # Throws
+- `ArgumentError` if inputs are invalid.
+"""
+function add_iterate!(history::Any, iterate::Any)
+    validate_history(history)
+    validate_iterate(iterate)
+end
 
-- `ArgumentError` if `history` is not of type `SEQUOIA_History` or `field` is not a valid field of `SEQUOIA_Solution_step`.
+"""
+    get_all(history::Any, field::Any)
+
+Fallback method to validate inputs before extracting field values from a history.
+
+# Arguments
+- `history`: Input to validate as `SEQUOIA_History`.
+- `field`: Input to validate as a valid field.
+
+# Throws
+- `ArgumentError` if inputs are invalid.
 """
 function get_all(history::Any, field::Any)
     validate_history(history)

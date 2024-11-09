@@ -4,7 +4,7 @@ export validate_sequoia_solution!
     validate_sequoia_solution!(solution::SEQUOIA_Solution_step)
 
 Validates the fields of a `SEQUOIA_Solution_step` instance. This function ensures the correctness and consistency 
-of the solution vector, gradients, constraints, solver parameters, and metadata.
+of the solution vector, gradients and metadata.
 
 # Arguments
 - `solution`: An instance of `SEQUOIA_Solution_step` to validate.
