@@ -3,10 +3,13 @@ using Sequoia
 
 makedocs(
     sitename = "Sequoia.jl",
-    format = Documenter.HTML(prettyurls = false, assets = ["assets/favicon.ico"]),
+    modules = [Sequoia],  
+    format = Documenter.HTML(),
     pages = [
         "Introduction" => "index.md",
-        "API" => "api.md"
+        "Getting Started" => "getting_started.md",
+        "Examples" => "examples.md",
+        "API Reference" => "api.md",
     ]
 )
 
