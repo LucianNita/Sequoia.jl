@@ -91,7 +91,7 @@ function validate_numeric!(settings::SEQUOIA_Settings)
     if settings.cost_min !== nothing && settings.cost_min < -1e15
         throw(ArgumentError("Cost minimum is too low, suggesting potential issues."))
     end
-    if settings.step_min !== nothing && (settings.cost_min < 1e-20 || settings.cost_min > 1e-4)
+    if settings.step_min !== nothing && (settings.step_min < 1e-20 || settings.step_min > 1e-4)
         throw(ArgumentError("Minimum step size must be in the range [1e-20, 1e-4]. Provided: $(settings.step_min)."))
     end
 end

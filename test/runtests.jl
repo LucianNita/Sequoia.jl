@@ -1,9 +1,7 @@
 using Sequoia
 using Test
-#using NLPModels
-#using CUTEst
 
-#include("test_structures/Settings_struct_testing.jl");
+include("test_structures/Settings_struct_testing.jl");
 #include("test_structures/Solution_struct_testing.jl");
 #include("test_structures/History_struct_testing.jl");
 #include("test_structures/Sequoia_struct_testing.jl");
