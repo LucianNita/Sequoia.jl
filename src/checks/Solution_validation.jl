@@ -49,25 +49,6 @@ function validate_sequoia_solution!(solution::SEQUOIA_Solution_step)
         throw(ArgumentError("`gval` must have the same number of elements as `x`. Got: $(length(solution.gval)) vs $(length(solution.x))."))
     end
 
-    # Validate `fval` (objective function value)
-    if !(solution.fval isa Float64)
-        throw(ArgumentError("Objective function value `fval` must be a `Float64`. Got: $(typeof(solution.fval))."))
-    end
-
-    # Validate `cval` (constraints vector) if provided
-    if !isnothing(solution.cval)
-        if !all(isa(c, Float64) for c in solution.cval)
-            throw(ArgumentError("All elements in `cval` must be `Float64`. Got: $(solution.cval)."))
-        end
-    end
-
-    # Validate `solver_params` if provided
-    if !isnothing(solution.solver_params)
-        if !all(isa(p, Float64) for p in solution.solver_params)
-            throw(ArgumentError("`solver_params` must be a vector of `Float64`. Got: $(solution.solver_params)."))
-        end
-    end
-
     # Validate `x_iterates` if provided
     if !isnothing(solution.x_iterates)
         if length(solution.x_iterates) != solution.num_inner_iterations + 1

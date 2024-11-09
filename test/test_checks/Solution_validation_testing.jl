@@ -25,6 +25,13 @@
         ))  # Should fail due to empty x
     end
 
+    # Invalid case: Negative convergence metric `convergence_metric`
+    @testset "Negative convergence metric" begin
+        @test_throws ArgumentError validate_sequoia_solution!(SEQUOIA_Solution_step(
+            10, -1e-6, :first_order, 0.02, 5, [1.0, 2.0], 0.5, [0.1, 0.2]
+        ))  # Should fail due to negative convergence metric
+    end
+
     # Invalid case: Empty gradient vector `gval`
     @testset "Invalid Empty Gradient Vector gval" begin
         @test_throws ArgumentError validate_sequoia_solution!(SEQUOIA_Solution_step(
@@ -53,6 +60,13 @@
         ))  # Should fail due to negative outer_iteration_number
     end
 
+    # Invalid case: Negative `num_inner_iterations`
+    @testset "Negative inner number of iterations" begin
+        @test_throws ArgumentError validate_sequoia_solution!(SEQUOIA_Solution_step(
+            10, 1e-6, :first_order, 0.02, -5, [1.0, 2.0], 0.5, [0.1, 0.2]
+        ))  # Should fail due to negative inner number of iterations
+    end
+
     # Invalid case: Non-numeric `convergence_metric`
     @testset "Invalid Convergence Metric Type" begin
         @test_throws MethodError validate_sequoia_solution!(SEQUOIA_Solution_step(
@@ -79,7 +93,15 @@
     @testset "Mismatched Dimensions in x_iterates" begin
         @test_throws ArgumentError validate_sequoia_solution!(SEQUOIA_Solution_step(
             10, 1e-6, :first_order, 0.02, 5, [1.0, 2.0], 0.5, [0.1, 0.2], nothing, nothing,
-            [[1.0], [1.1, 2.1], [1.2, 2.2], [1.3, 2.3], [1.4, 2.4]]  # Invalid dimensions in x_iterates
+            [[1.0,1.0], [1.1, 2.1], [1.2, 2.2], [1.3, 2.3], [1.4, 2.4]]  # Invalid dimensions in x_iterates
+        ))
+    end
+
+    # Invalid case: `x_iterates` should contain vectors of the same size as `x`
+    @testset "Wrong Dimensions in x_iterates components" begin
+        @test_throws ArgumentError validate_sequoia_solution!(SEQUOIA_Solution_step(
+            10, 1e-6, :first_order, 0.02, 4, [1.0, 2.0], 0.5, [0.1, 0.2], nothing, nothing,
+            [[1.0, 1.0], [1.1, 2.1], [1.2, 2.2], [1.3, 2.3], [1.4]]  # Invalid dimensions in x_iterates
         ))
     end
 
