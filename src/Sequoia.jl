@@ -13,8 +13,6 @@ include("checks/Sequoia_validation.jl");
 include("interfaces/cutest_interface.jl");
 include("interfaces/solve.jl");
 
-include("checks/cutest_check.jl");
-
 include("algorithms/sequoia_feasibility.jl")
 include("algorithms/qpm.jl");
 include("algorithms/auglag.jl");

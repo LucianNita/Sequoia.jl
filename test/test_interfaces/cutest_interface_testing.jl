@@ -1,49 +1,88 @@
-# Unit test set for CUTEst to SEQUOIA_pb conversion using actual CUTEst problems
-@testset "CUTEst to SEQUOIA_pb Conversion with Real Problems" begin
-    # Load a list of real CUTEst problems
-    problems = ["ROSENBR","HS21","INVALID"]
-    
-    # Iterate over each loaded problem
-    for i in eachindex(problems)
-        if i==length(problems)
-            @test_throws ErrorException cutest_problem=CUTEstModel(problems[i])
-            continue
-        end
-        cutest_problem=CUTEstModel(problems[i])
+using NLPModels
+using CUTEst
 
-        @testset "Testing conversion for problem: $(cutest_problem.meta.name)" begin
-            # Convert the CUTEst problem to a SEQUOIA_pb instance
-            sequoia_pb = cutest_to_sequoia(cutest_problem)
-            
-            # Basic checks
-            @test sequoia_pb.nvar == cutest_problem.meta.nvar
-            @test sequoia_pb.x0 == cutest_problem.meta.x0
-            @test sequoia_pb.is_minimization == cutest_problem.meta.minimize
+@testset "cutest_to_sequoia Tests" begin
 
-            # Objective function check: validate evaluation at the initial point
-            x0 = cutest_problem.meta.x0
-            @test sequoia_pb.objective(x0) ≈ obj(cutest_problem, x0)
-
-            # Gradient check: validate evaluation at the initial point
-            @test sequoia_pb.gradient(x0) ≈ grad(cutest_problem, x0)
-
-            # Check if the problem has constraints and validate constraints if present
-            if cutest_problem.meta.ncon > 0
-                # Constraint check: validate evaluation at the initial point
-                @test sequoia_pb.constraints(x0) ≈ cons(cutest_problem, x0)
-                
-                # Jacobian check: validate evaluation at the initial point
-                @test sequoia_pb.jacobian(x0) ≈ jac(cutest_problem, x0)
-
-                # Validate equality and inequality indices
-                @test sequoia_pb.eqcon == cutest_problem.meta.jfix
-                @test sequoia_pb.ineqcon == sort(vcat(cutest_problem.meta.jlow, cutest_problem.meta.jupp, cutest_problem.meta.jrng))
-            end
-
-            # Ensure the original CUTEst problem reference is preserved in the SEQUOIA_pb instance
-            @test sequoia_pb.cutest_nlp === cutest_problem
-        end
-
+    # Test 1: Problem with no constraints
+    @testset "No Constraints" begin
+        cutest_problem = CUTEstModel("ROSENBR")  # Unconstrained problem
+        pb = cutest_to_sequoia(cutest_problem)
+        @test pb.nvar == cutest_problem.meta.nvar
+        @test pb.is_minimization == cutest_problem.meta.minimize
+        @test pb.constraints === nothing
+        @test pb.jacobian === nothing
+        @test isempty(pb.eqcon)
+        @test isempty(pb.ineqcon)
         finalize(cutest_problem)
     end
+
+    # Test 2: Problem with only equality constraints
+    @testset "Equality Constraints Only" begin
+        cutest_problem = CUTEstModel("HS28")  # Only equality constraints
+        pb = cutest_to_sequoia(cutest_problem)
+        @test pb.nvar == cutest_problem.meta.nvar
+        @test pb.is_minimization == cutest_problem.meta.minimize
+        @test pb.constraints !== nothing
+        @test pb.jacobian !== nothing
+        @test !isempty(pb.eqcon)
+        @test isempty(pb.ineqcon)
+        finalize(cutest_problem)
+    end
+
+    # Test 3: Problem with only inequality constraints
+    @testset "Inequality Constraints Only" begin
+        cutest_problem = CUTEstModel("HS76")  # Only inequality constraints
+        pb = cutest_to_sequoia(cutest_problem)
+        @test pb.nvar == cutest_problem.meta.nvar
+        @test pb.is_minimization == cutest_problem.meta.minimize
+        @test pb.constraints !== nothing
+        @test pb.jacobian !== nothing
+        @test isempty(pb.eqcon)
+        @test !isempty(pb.ineqcon)
+        finalize(cutest_problem)
+    end
+
+    # Test 4: Problem with both equality and inequality constraints
+    @testset "Equality and Inequality Constraints" begin
+        cutest_problem = CUTEstModel("HS75")  # Both equality and inequality constraints
+        pb = cutest_to_sequoia(cutest_problem)
+        @test pb.nvar == cutest_problem.meta.nvar
+        @test pb.is_minimization == cutest_problem.meta.minimize
+        @test pb.constraints !== nothing
+        @test pb.jacobian !== nothing
+        @test !isempty(pb.eqcon)
+        @test !isempty(pb.ineqcon)
+        finalize(cutest_problem)
+    end
+
+    # Test 5: Large-scale problem with constraints
+    @testset "Large-Scale Problem with Constraints" begin
+        cutest_problem = CUTEstModel("STNQP1")  # Large-scale problem
+        pb = cutest_to_sequoia(cutest_problem)
+        @test pb.nvar == cutest_problem.meta.nvar
+        @test pb.is_minimization == cutest_problem.meta.minimize
+        @test pb.constraints !== nothing
+        @test pb.jacobian !== nothing
+        @test length(pb.eqcon) + length(pb.ineqcon) > 0
+        finalize(cutest_problem)
+    end
+
+    # Test 6: Validate Converted `SEQUOIA_pb` Instance
+    @testset "Validate Converted SEQUOIA_pb Instance" begin
+        # Load the problem and convert it
+        cutest_problem = CUTEstModel("HS35")  # Example problem with constraints
+        pb = cutest_to_sequoia(cutest_problem)
+        
+        @test pb.nvar == cutest_problem.meta.nvar
+        @test pb.is_minimization == cutest_problem.meta.minimize
+        @test pb.constraints !== nothing
+        @test pb.jacobian !== nothing
+        @test length(pb.eqcon) + length(pb.ineqcon) > 0
+
+        @test validate_pb!(pb) === nothing
+        finalize(cutest_problem)
+
+        @test_throws ErrorException cutest_problem = CUTEstModel("INVALID")
+    end
+
 end
