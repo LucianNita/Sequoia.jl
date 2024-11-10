@@ -108,4 +108,38 @@
         ineqcon=[2],
     )
     @test validate_pb!(valid_constraints_problem) === nothing  # Should pass without errors
+    
+    # Test 12: Invalid Jacobian size
+    invalid_jacobian_problem = SEQUOIA_pb(
+        3;
+        x0=[1.0, 2.0, 3.0],
+        objective=x -> sum(x.^2),
+        gradient=x -> 2 .* x,
+        constraints=x -> [x[1] - 1, x[2] - 2],
+        jacobian=x -> [1.0 0.0; 0.0 1.0]  # Incorrect size
+    )
+    @test_throws ArgumentError validate_pb!(invalid_jacobian_problem)
+
+    # Test 13: Fallback method for non-SEQUOIA_pb object
+    @test_throws ArgumentError set_objective!("not_a_problem", x -> sum(x.^2))  # Should trigger `pb_fallback`
+
+    # Test 14: Fallback for non-function objective
+    invalid_problem = SEQUOIA_pb(
+        3;
+        x0=[1.0, 2.0, 3.0]
+    )
+    @test_throws ArgumentError set_objective!(invalid_problem, "not_a_function")  # Should trigger `objective_setter_fallback`
+
+    # Test 15: Invalid Jacobian size (via set_constraints!)
+    invalid_jacobian_problem = SEQUOIA_pb(
+        3;
+        x0=[1.0, 2.0, 3.0],
+        objective=x -> sum(x.^2),
+        gradient=x -> 2 .* x,
+        constraints=x -> [x[1] - 1, x[2] - 2],
+        jacobian=x -> [1.0 0.0; 0.0 1.0],  # Incorrect Jacobian size
+        eqcon=[1],
+        ineqcon=[2]
+    )
+    @test_throws ArgumentError validate_pb!(invalid_jacobian_problem)  # Should fail due to incorrect Jacobian size
 end
