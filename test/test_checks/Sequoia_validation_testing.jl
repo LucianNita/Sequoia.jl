@@ -142,4 +142,16 @@
         ineqcon=[2]
     )
     @test_throws ArgumentError validate_pb!(invalid_jacobian_problem)  # Should fail due to incorrect Jacobian size
+
+    # Test 16: Mismatched equality and inequality indices
+    invalid_indices_problem = SEQUOIA_pb(
+        3;
+        x0=[1.0, 2.0, 3.0],
+        objective=x -> sum(x.^2),
+        gradient=x -> 2 .* x,
+        constraints=x -> [x[1] - 1, x[2] - 2, x[3] - 3],  # Three constraints defined
+        eqcon=[1],                                        # Only index 1 specified for equality
+        ineqcon=[4]                                       # Index 4 is invalid (out of bounds)
+    )
+    @test_throws ArgumentError validate_pb!(invalid_indices_problem)  # Should fail due to invalid indices
 end

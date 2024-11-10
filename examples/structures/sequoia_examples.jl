@@ -1,353 +1,214 @@
 """
-# Example 1: Full Problem Setup with Constraints, Objective, and Initial Guess
+# SEQUOIA_pb Examples
 
-This example demonstrates how to set up a `SEQUOIA_pb` problem with constraints, an objective function, and a custom initial guess.
-
-```julia
-example_full_problem_setup()
-
-pb = SEQUOIA_pb(
-    2, 
-    x0 = [0.5, 0.5],               # Initial guess
-    is_minimization = true,         # Minimization problem
-    solver_settings = SEQUOIA_Settings(:QPM, :LBFGS, false, 1e-6, 1000, 3600.0)  # Solver settings
-)
-
-# Define a simple quadratic objective function
-objective_fn = x -> sum(x.^2)
-set_objective!(pb, objective_fn)
-
-# Define constraints: x1 + x2 = 1
-constraints_fn = x -> [x[1] + x[2] - 1.0]
-set_constraints!(pb, constraints_fn, [1], Int[])  # Equality constraint
-
-# Print the problem setup
-println(pb)
-
-# Expected output:
-# SEQUOIA_pb with fields showing the nvar, x0, objective, constraints, and solver settings.
-"""
-
-# Example 1: Full Problem Setup with Constraints, Objective, and Initial Guess
-function example_full_problem_setup()
-    # Initialize the SEQUOIA problem with two variables and custom solver settings
-    pb = SEQUOIA_pb(
-        2, 
-        x0 = [0.5, 0.5],               # Initial guess
-        is_minimization = true,         # Minimization problem
-        solver_settings = SEQUOIA_Settings(:QPM, :LBFGS, false, 1e-6, 1000, 3600.0)  # Solver settings
-    )
-
-    # Define a simple quadratic objective function
-    objective_fn = x -> sum(x.^2)
-    set_objective!(pb, objective_fn)
-
-    # Define constraints: x1 + x2 = 1
-    constraints_fn = x -> [x[1] + x[2] - 1.0]
-    set_constraints!(pb, constraints_fn, [1], Int[])  # Equality constraint
-
-    # Output the problem setup
-    println("Problem setup completed with constraints and objective:")
-    println(pb)
-end
-
-
-"""
-# Example 2: Unconstrained Minimization Problem with Automatic Differentiation
-
-This example shows how to set up a simple unconstrained minimization problem. The gradient is automatically computed using ForwardDiff.
-
-```julia
-example_unconstrained_problem()
-
-pb = SEQUOIA_pb(2)
-
-# Define the objective function
-objective_fn = x -> (x[1] - 3.0)^2 + (x[2] - 2.0)^2  # Minimize the distance from (3, 2)
-set_objective!(pb, objective_fn)  # No need to set gradient, it will be auto-computed
-
-println(pb)
-
-# Expected output:
-# SEQUOIA_pb object with objective set and auto-computed gradient.
-"""
-
-# Example 2: Unconstrained Minimization Problem with Automatic Differentiation
-function example_unconstrained_problem()
-    # Initialize the SEQUOIA problem with two variables
-    pb = SEQUOIA_pb(2)
-
-    # Define the objective function to minimize the distance from (3, 2)
-    objective_fn = x -> (x[1] - 3.0)^2 + (x[2] - 2.0)^2
-    set_objective!(pb, objective_fn)  # Gradient will be auto-computed
-
-    # Output the problem setup
-    println("Unconstrained problem setup with auto-computed gradient:")
-    println(pb)
-end
-
-
-"""
-# Example 3: Setting Solver Settings for a Feasibility Problem
-
-This example demonstrates how to set up solver settings for a feasibility problem (no objective). The `set_solver_settings!` function is used to define solver-specific parameters.
-
-```julia
-example_feasibility_problem()
-
-pb = SEQUOIA_pb(3)
-
-# Define solver settings for a feasibility problem
-settings = SEQUOIA_Settings(
-    :QPM,              # Outer method
-    :Newton,           # Inner solver
-    true,              # Feasibility problem
-    1e-6,              # Residual tolerance for constraints
-    500,               # Max iterations for outer solver
-    1800.0             # Max time for outer solver in seconds
-)
-set_solver_settings!(pb, settings)
-
-println(pb)
-
-# Expected output:
-# SEQUOIA_pb object with solver settings defined for a feasibility problem.
-"""
-
-# Example 3: Setting Solver Settings for a Feasibility Problem
-function example_feasibility_problem()
-    # Initialize the SEQUOIA problem with three variables
-    pb = SEQUOIA_pb(3)
-
-    # Define solver settings for a feasibility problem
-    settings = SEQUOIA_Settings(
-        :QPM,              # Outer method
-        :Newton,           # Inner solver
-        true,              # Feasibility problem
-        1e-6,              # Residual tolerance for constraints
-        500,               # Max iterations for outer solver
-        1800.0             # Max time for outer solver in seconds
-    )
-    set_solver_settings!(pb, settings)
-
-    # Output the problem setup
-    println("Feasibility problem setup with custom solver settings:")
-    println(pb)
-end
-
-
-
-"""
-# Example 4: Handling an Invalid Objective Function
-
-This example demonstrates the error handling mechanism when an invalid objective function is provided. The `set_objective!` function ensures that the objective is a valid function returning a scalar.
-
-```julia
-example_invalid_objective()
-
-pb = SEQUOIA_pb(2)
-
-# Attempt to set an invalid objective function (e.g., returning a vector instead of a scalar)
-try
-    set_objective!(pb, x -> [x[1] + x[2]])  # This should fail because the output is not a scalar
-catch e
-    println(e)  # Prints the error: "The objective function must return a scalar of type Float64."
-end
-"""
-
-# Example 4: Handling an Invalid Objective Function
-function example_invalid_objective()
-    # Initialize the SEQUOIA problem with two variables
-    pb = SEQUOIA_pb(2)
-
-    # Attempt to set an invalid objective function
-    try
-        set_objective!(pb, x -> [x[1] + x[2]])  # Should fail; output is a vector, not a scalar
-    catch e
-        println("Caught an error while setting an invalid objective function:")
-        println(e)  # Print the error message
+This file contains example use cases for the `SEQUOIA_pb` struct and related functions, demonstrating its usage in different scenarios:
+    1. Basic initialization of an optimization problem.
+    2. Using a provided gradient or automatic differentiation for the gradient.
+    3. Adding constraints and Jacobian or using automatic differentiation for missing Jacobians.
+    4. Managing solver settings and solution history.
+    5. Handling constraints and their validation.
+    """
+    
+    using Sequoia
+    
+    # Example 1: Basic Optimization Problem
+    """
+    This example demonstrates how to initialize a `SEQUOIA_pb` optimization problem 
+    with a simple quadratic objective function. No gradient, constraints, or Jacobian are provided.
+    
+    # Usage:
+        example_basic_problem()
+    
+    # Expected Output:
+        Objective function set. Problem initialized.
+        SEQUOIA_pb(3, [0.0, 0.0, 0.0], true, var"#35#36"(), nothing, nothing, nothing, Int64[], Int64[], SEQUOIA_Settings(:QPM, :LBFGS, false, 1.0e-6, 1000, 300.0, 1.0e-6, :GradientNorm, nothing, nothing, false, nothing, nothing, nothing, nothing), SEQUOIA_History(SEQUOIA_Solution_step[]), nothing)
+        # The above is a SEQUOIA_pb instance with a quadratic objective and default settings.
+    """
+    function example_basic_problem()
+        pb = SEQUOIA_pb(
+            3;
+            x0=[0.0, 0.0, 0.0],
+            objective=x -> sum(x.^2)
+        )
+        println("Objective function set. Problem initialized.")
+        println(pb)
     end
-end
-
-
-"""
-# Example 5: Setting Constraints and Jacobian with Automatic Differentiation
-
-This example demonstrates how to set constraints and automatically compute the Jacobian using ForwardDiff for the `SEQUOIA_pb` problem.
-
-```julia
-example_constraints_and_jacobian()
-
-pb = SEQUOIA_pb(2)
-
-# Define a simple constraint function
-constraints_fn = x -> [x[1]^2 + x[2] - 1.0]
-
-# Set the constraints and let the Jacobian be computed automatically
-set_constraints!(pb, constraints_fn, eqcon=[1], ineqcon=[])
-
-# Print the problem to verify the constraints and Jacobian setup
-println(pb)
-"""
-
-# Example 5: Setting Constraints and Jacobian with Automatic Differentiation
-function example_constraints_and_jacobian()
-    # Initialize the SEQUOIA problem with two variables
-    pb = SEQUOIA_pb(2)
-
-    # Define a simple constraint function
-    constraints_fn = x -> [x[1]^2 + x[2] - 1.0]
-
-    # Set the constraints and auto-compute the Jacobian
-    set_constraints!(pb, constraints_fn, eqcon = [1], ineqcon = [])
-
-    # Output the problem setup
-    println("Problem setup with constraints and auto-computed Jacobian:")
-    println(pb)
-end
-
-
-"""
-# Example 6: Setting Custom Solver Settings
-
-This example demonstrates how to set custom solver settings for the `SEQUOIA_pb` problem, including changing the optimization method and convergence criteria.
-
-```julia
-example_custom_solver_settings()
-
-pb = SEQUOIA_pb(3)
-
-# Define a simple objective function
-objective_fn = x -> sum(x.^2)
-
-# Set the objective function for the problem
-set_objective!(pb, objective_fn)
-
-# Define custom solver settings
-custom_settings = SEQUOIA_Settings(:QPM, :Newton, false, 1e-7, 2000, 5000.0)
-
-# Set custom solver settings for the problem
-set_solver_settings!(pb, custom_settings)
-
-# Print the problem to verify the solver settings
-println(pb)
-"""
-
-# Example 6: Setting Custom Solver Settings
-function example_custom_solver_settings()
-    # Initialize the SEQUOIA problem with three variables
-    pb = SEQUOIA_pb(3)
-
-    # Define a simple quadratic objective function
-    objective_fn = x -> sum(x.^2)
-    set_objective!(pb, objective_fn)
-
-    # Define custom solver settings
-    custom_settings = SEQUOIA_Settings(:QPM, :Newton, false, 1e-7, 2000, 5000.0)
-    set_solver_settings!(pb, custom_settings)
-
-    # Output the problem setup
-    println("Problem setup with custom solver settings:")
-    println(pb)
-end
-
-
-"""
-# Example 7: Resetting the Solution History
-
-This example demonstrates how to reset the solution history of a `SEQUOIA_pb` problem instance after solving or modifying the problem setup.
-
-```julia
-example_reset_solution_history()
-
-pb = SEQUOIA_pb(2)
-
-# Define an objective function
-objective_fn = x -> sum(x.^2)
-
-# Set the objective function for the problem
-set_objective!(pb, objective_fn)
-
-# Solve the problem (hypothetical solve, just a placeholder)
-println("Solving the problem...")
-
-# Reset the solution history after solving
-reset_solution_history!(pb)
-
-# Print the problem to verify that the solution history is reset
-println(pb)
-"""
-
-# Example 7: Resetting the Solution History
-function example_reset_solution_history()
-    # Initialize the SEQUOIA problem with two variables
-    pb = SEQUOIA_pb(2)
-
-    # Define a simple objective function
-    objective_fn = x -> sum(x.^2)
-    set_objective!(pb, objective_fn)
-
-    # Simulate solving the problem
-    println("Solving the problem (simulation)...")
-
-    # Reset the solution history after the simulation
-    reset_solution_history!(pb)
-
-    # Output the problem to verify history reset
-    println("Solution history reset:")
-    println(pb)
-end
-
-"""
-# Example 8: Handling Invalid Exit Codes
-
-This example demonstrates how to update the `exitCode` of a `SEQUOIA_pb` problem instance and how to handle invalid exit codes.
-
-```julia
-example_invalid_exit_code()
-
-pb = SEQUOIA_pb(2)
-
-# Attempt to update the exit code with a valid value
-update_exit_code!(pb, :OptimalityReached)
-
-# Print the updated problem
-println("Updated exit code to :OptimalityReached:")
-println(pb)
-
-# Now attempt to update the exit code with an invalid value (this will throw an error)
-try
-    update_exit_code!(pb, :InvalidCode)
-catch e
-    println("Caught an error: ", e)
-end
-
-Expected output:
-
-Updated exit code to :OptimalityReached:
-SEQUOIA_pb(2, ...)
-Caught an error: Invalid exit code: `:InvalidCode`. Must be one of: [:NotCalled, :OptimalityReached, :Infeasibility, :MaxIterations, :Unbounded, :SolverError]
-
-""" 
-
-# Example 8: Handling Invalid Exit Codes
-function example_invalid_exit_code()
-    # Initialize the SEQUOIA problem with two variables
-    pb = SEQUOIA_pb(2)
-
-    # Set a valid exit code
-    update_exit_code!(pb, :OptimalityReached)
-
-    # Output the updated problem with a valid exit code
-    println("Updated exit code to :OptimalityReached:")
-    println(pb)
-
-    # Attempt to set an invalid exit code
-    try
-        update_exit_code!(pb, :InvalidCode)
-    catch e
-        println("Caught an error while setting an invalid exit code:")
-        println(e)
+    
+    # Example 2: Optimization Problem with Provided Gradient
+    """
+    This example shows how to define an optimization problem with both an objective function 
+    and its explicitly provided gradient.
+    
+    # Usage:
+        example_gradient_provided()
+    
+    # Expected Output:
+        Gradient function provided:
+        [2.0, 4.0, 6.0]
+    """
+    function example_gradient_provided()
+        pb = SEQUOIA_pb(
+            3;
+            x0=[1.0, 2.0, 3.0],
+            objective=x -> sum(x.^2),
+            gradient=x -> 2 .* x
+        )
+        println("Gradient function provided: ")
+        println(pb.gradient([1.0, 2.0, 3.0]))
     end
-end
+    
+    # Example 3: Automatic Differentiation for Gradient
+    """
+    This example demonstrates how `SEQUOIA_pb` uses automatic differentiation to compute the gradient 
+    when it is not explicitly provided.
+    
+    # Usage:
+        example_autodiff_gradient()
+    
+    # Expected Output:
+        Before validation, gradient is nothing: nothing
+        ┌ Warning: A gradient is required. Setting one using Automatic Differentiation with ForwardDiff.
+        └ @ Sequoia ~/Sequoia.jl/src/checks/Sequoia_validation.jl:121
+        ┌ Warning: No constraints are set. Ensure this is intended, as SEQUOIA is tailored for constrained optimization.
+        └ @ Sequoia ~/Sequoia.jl/src/checks/Sequoia_validation.jl:150
+        After validation, gradient is set: #10
+    """
+    function example_autodiff_gradient()
+        pb = SEQUOIA_pb(
+            3;
+            x0=[1.0, 1.0, 1.0],
+            objective=x -> sum(x.^2)  # No gradient provided
+        )
+        println("Before validation, gradient is nothing: ", pb.gradient)
+        validate_pb!(pb)  # Automatic differentiation is triggered here
+        println("After validation, gradient is set: ", pb.gradient)
+    end
+    
+    # Example 4: Adding Constraints and Jacobian
+    """
+    This example illustrates how to add constraints and explicitly define a Jacobian matrix 
+    to a `SEQUOIA_pb` problem.
+    
+    # Usage:
+        example_constraints()
+    
+    # Expected Output:
+        Constraints and Jacobian set. Problem initialized.
+        SEQUOIA_pb(3, [1.0, 2.0, 3.0], true, var"#43#46"(), nothing, var"#44#47"(), var"#45#48"(), [1], [2], SEQUOIA_Settings(:QPM, :LBFGS, false, 1.0e-6, 1000, 300.0, 1.0e-6, :GradientNorm, nothing, nothing, false, nothing, nothing, nothing, nothing), SEQUOIA_History(SEQUOIA_Solution_step[]), nothing)
+        # The above is a problem instance with constraints and their Jacobian set.
+    """
+    function example_constraints()
+        pb = SEQUOIA_pb(
+            3;
+            x0=[1.0, 2.0, 3.0],
+            objective=x -> sum(x.^2),
+            constraints=x -> [x[1] - 1, x[2] - 2],
+            jacobian=x -> [1.0 0.0 0.0; 0.0 1.0 0.0],
+            eqcon=[1],
+            ineqcon=[2]
+        )
+        println("Constraints and Jacobian set. Problem initialized.")
+        println(pb)
+    end
+    
+    # Example 5: Automatic Differentiation for Jacobian
+    """
+    This example demonstrates how `SEQUOIA_pb` uses automatic differentiation to compute the Jacobian 
+    when it is not explicitly provided.
+    
+    # Usage:
+        example_autodiff_jacobian()
+    
+    # Expected Output:
+        Before validation, Jacobian is nothing: nothing
+        ┌ Warning: A gradient is required. Setting one using Automatic Differentiation with ForwardDiff.
+        └ @ Sequoia ~/Sequoia.jl/src/checks/Sequoia_validation.jl:121
+        ┌ Warning: A Jacobian is required. Setting one using Automatic Differentiation with ForwardDiff.
+        └ @ Sequoia ~/Sequoia.jl/src/checks/Sequoia_validation.jl:184
+        After validation, Jacobian is set.
+        [1.0 0.0 0.0; 0.0 1.0 0.0]
+    """
+    function example_autodiff_jacobian()
+        pb = SEQUOIA_pb(
+            3;
+            x0=[1.0, 2.0, 3.0],
+            objective=x -> sum(x.^2),
+            constraints=x -> [x[1] - 1, x[2] - 2],  # No Jacobian provided
+            eqcon=[1],
+            ineqcon=[2]
+        )
+        println("Before validation, Jacobian is nothing: ", pb.jacobian)
+        validate_pb!(pb)  # Automatic differentiation is triggered here
+        println("After validation, Jacobian is set.")
+        println(pb.jacobian([1.0, 2.0, 3.0]))
+    end
+    
+    # Example 6: Updating Solver Settings
+    """
+    This example shows how to modify the solver settings for a `SEQUOIA_pb` optimization problem.
+    
+    # Usage:
+        example_solver_settings()
+    
+    # Expected Output:
+        Default solver settings: SEQUOIA_Settings(:QPM, :LBFGS, false, 1.0e-6, 1000, 300.0, 1.0e-6, :GradientNorm, nothing, nothing, false, nothing, nothing, nothing, nothing)
+        Updated solver settings: SEQUOIA_Settings(:QPM, :Newton, false, 1.0e-8, 500, 60.0, 1.0e-10, :GradientNorm, nothing, nothing, false, nothing, nothing, nothing, nothing)
+    """
+    function example_solver_settings()
+        pb = SEQUOIA_pb(
+            3;
+            x0=[1.0, 2.0, 3.0],
+            objective=x -> sum(x.^2)
+        )
+        println("Default solver settings: ", pb.solver_settings)
+        new_settings = SEQUOIA_Settings(:QPM, :Newton, false, 1e-8, 500, 60.0, 10^-10)
+        set_solver_settings!(pb, new_settings)
+        println("Updated solver settings: ", pb.solver_settings)
+    end
+    
+    # Example 7: Resetting Solution History
+    """
+    This example demonstrates how to reset the solution history of a `SEQUOIA_pb` problem.
+    
+    # Usage:
+        example_reset_history()
+    
+    # Expected Output:
+        Before resetting, solution history length: 1
+        After resetting, solution history length: 0
+    """
+    function example_reset_history()
+        pb = SEQUOIA_pb(
+            3;
+            x0=[1.0, 2.0, 3.0],
+            objective=x -> sum(x.^2),
+            gradient=x -> 2 * x
+        )
 
+        # Add a mock solution step to the history
+        solution_step = SEQUOIA_Solution_step(
+            1,
+            0.01,
+            :first_order,
+            0.1,
+            5,
+            [1.0, 2.0, 3.0],
+            14.0,
+            [2.0, 4.0, 6.0]
+        )
+        add_iterate!(pb.solution_history, solution_step)
+
+        println("Before resetting, solution history length: ", length(pb.solution_history.iterates))
+        reset_solution_history!(pb)
+        println("After resetting, solution history length: ", length(pb.solution_history.iterates))
+    end
+    
+    # Call all examples
+    example_basic_problem()
+    example_gradient_provided()
+    example_autodiff_gradient()
+    example_constraints()
+    example_autodiff_jacobian()
+    example_solver_settings()
+    example_reset_history()
+    

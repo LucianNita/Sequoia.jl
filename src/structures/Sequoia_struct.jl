@@ -240,23 +240,6 @@ function set_solver_settings!(pb::Any, settings::Any)
 end
 
 """
-    update_exit_code!(pb::SEQUOIA_pb, code::Symbol)
-
-Updates the `exitCode` field of the SEQUOIA_pb problem. This function validates that the exit code is one of the predefined, accepted codes.
-
-# Arguments
-- `pb`: The `SEQUOIA_pb` problem instance.
-- `code`: The new exit code. Must be one of `:NotCalled`, `:OptimalityReached`, `:Infeasibility`, `:MaxIterations`, `:Unbounded`, `:SolverError`.
-
-# Throws
-- `ArgumentError`: If the `code` is not a valid exit code.
-"""
-function update_exit_code!(pb::SEQUOIA_pb, code::Symbol)
-    validate_code(code)
-    pb.exitCode = code
-end
-
-"""
     reset_solution_history!(pb::SEQUOIA_pb)
 
 Resets the solution history for the SEQUOIA_pb problem.
