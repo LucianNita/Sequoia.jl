@@ -1,6 +1,19 @@
 @testset "SEQUOIA_pb Unit Tests" begin
-
-    # Test 1: Basic Optimization Problem
+    
+    # Test 1: Minimal Initialization with Just `nvar`
+    @testset "Minimal Initialization" begin
+        pb = SEQUOIA_pb(2)
+        @test pb.nvar == 2
+        @test pb.x0 == [0.0, 0.0]
+        @test pb.objective === nothing
+        @test pb.gradient === nothing
+        @test pb.constraints === nothing
+        @test pb.jacobian === nothing
+        @test pb.eqcon == Int[]
+        @test pb.ineqcon == Int[]
+    end
+    
+    # Test 2: Basic Optimization Problem
     @testset "Basic Optimization Problem" begin
         pb = SEQUOIA_pb(
             3;
@@ -19,7 +32,7 @@
         @test pb.solution_history.iterates == []
     end
 
-    # Test 2: Optimization Problem with Provided Gradient
+    # Test 3: Optimization Problem with Provided Gradient
     @testset "Optimization Problem with Provided Gradient" begin
         pb = SEQUOIA_pb(
             3;
@@ -37,7 +50,7 @@
         @test pb.ineqcon == Int[]
     end
 
-    # Test 3: Automatic Differentiation for Gradient
+    # Test 4: Automatic Differentiation for Gradient
     @testset "Automatic Differentiation for Gradient" begin
         pb = SEQUOIA_pb(
             3;
@@ -52,7 +65,7 @@
         @test pb.jacobian === nothing
     end
 
-    # Test 4: Adding Constraints and Jacobian
+    # Test 5: Adding Constraints and Jacobian
     @testset "Adding Constraints and Jacobian" begin
         pb = SEQUOIA_pb(
             3;
@@ -72,7 +85,7 @@
         @test pb.x0 == [1.0, 2.0, 3.0]
     end
 
-    # Test 5: Automatic Differentiation for Jacobian
+    # Test 6: Automatic Differentiation for Jacobian
     @testset "Automatic Differentiation for Jacobian" begin
         pb = SEQUOIA_pb(
             3;
@@ -90,7 +103,7 @@
         @test pb.constraints([1.0, 2.0, 3.0]) == [0.0, 0.0]
     end
 
-    # Test 6: Updating Solver Settings
+    # Test 7: Updating Solver Settings
     @testset "Updating Solver Settings" begin
         pb = SEQUOIA_pb(
             3;
@@ -106,7 +119,7 @@
         @test pb.solver_settings.resid_tolerance == 1e-8
     end
 
-    # Test 7: Resetting Solution History
+    # Test 8: Resetting Solution History
     @testset "Resetting Solution History" begin
         pb = SEQUOIA_pb(
             3;
@@ -131,4 +144,31 @@
         @test length(pb.solution_history.iterates) == 0
     end
 
+    # Test 9: Using `set_initial_guess!`
+    @testset "Using set_initial_guess!" begin
+        pb = SEQUOIA_pb(3; objective=x -> sum(x.^2))
+        @test pb.x0 == [0.0, 0.0, 0.0]
+        set_initial_guess!(pb, [2.0, 3.0, 4.0])
+        @test pb.x0 == [2.0, 3.0, 4.0]
+    end
+
+    # Test 10: Using `set_objective!`
+    @testset "Using set_objective!" begin
+        pb = SEQUOIA_pb(3; objective=x -> sum(x.^2))
+        @test pb.objective([1.0, 2.0, 3.0]) == 14.0
+        set_objective!(pb, x -> sum(x), gradient=x -> ones(length(x)))
+        @test pb.objective([1.0, 2.0, 3.0]) == 6.0
+        @test pb.gradient([1.0, 2.0, 3.0]) == [1.0, 1.0, 1.0]
+    end
+
+    # Test 11: Using `set_constraints!`
+    @testset "Using set_constraints!" begin
+        pb = SEQUOIA_pb(3; objective=x -> sum(x.^2))
+        @test pb.constraints === nothing
+        set_constraints!(pb, x -> [x[1] - 1, x[2] - 2], [1], [2], jacobian=x -> [1.0 0.0 0.0; 0.0 1.0 0.0])
+        @test pb.constraints([1.0, 2.0, 3.0]) == [0.0, 0.0]
+        @test pb.jacobian([1.0, 2.0, 3.0]) == [1.0 0.0 0.0; 0.0 1.0 0.0]
+        @test pb.eqcon == [1]
+        @test pb.ineqcon == [2]
+    end
 end

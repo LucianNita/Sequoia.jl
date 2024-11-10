@@ -109,16 +109,10 @@
     )
     @test validate_pb!(valid_constraints_problem) === nothing  # Should pass without errors
     
-    # Test 12: Invalid Jacobian size
-    invalid_jacobian_problem = SEQUOIA_pb(
-        3;
-        x0=[1.0, 2.0, 3.0],
-        objective=x -> sum(x.^2),
-        gradient=x -> 2 .* x,
-        constraints=x -> [x[1] - 1, x[2] - 2],
-        jacobian=x -> [1.0 0.0; 0.0 1.0]  # Incorrect size
-    )
-    @test_throws ArgumentError validate_pb!(invalid_jacobian_problem)
+    # Test 12: Solver settings fallback
+    problem = SEQUOIA_pb(3)
+    invalid_settings = "InvalidSettings"  # Invalid type for solver settings
+    @test_throws ArgumentError set_solver_settings!(problem, invalid_settings)
 
     # Test 13: Fallback method for non-SEQUOIA_pb object
     @test_throws ArgumentError set_objective!("not_a_problem", x -> sum(x.^2))  # Should trigger `pb_fallback`
@@ -130,7 +124,7 @@
     )
     @test_throws ArgumentError set_objective!(invalid_problem, "not_a_function")  # Should trigger `objective_setter_fallback`
 
-    # Test 15: Invalid Jacobian size (via set_constraints!)
+    # Test 15: Invalid Jacobian size 
     invalid_jacobian_problem = SEQUOIA_pb(
         3;
         x0=[1.0, 2.0, 3.0],
@@ -151,7 +145,7 @@
         gradient=x -> 2 .* x,
         constraints=x -> [x[1] - 1, x[2] - 2, x[3] - 3],  # Three constraints defined
         eqcon=[1],                                        # Only index 1 specified for equality
-        ineqcon=[4]                                       # Index 4 is invalid (out of bounds)
+        ineqcon=[2,2]                                     # Index 3 is missing
     )
     @test_throws ArgumentError validate_pb!(invalid_indices_problem)  # Should fail due to invalid indices
 end

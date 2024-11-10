@@ -2,16 +2,41 @@
 # SEQUOIA_pb Examples
 
 This file contains example use cases for the `SEQUOIA_pb` struct and related functions, demonstrating its usage in different scenarios:
-    1. Basic initialization of an optimization problem.
-    2. Using a provided gradient or automatic differentiation for the gradient.
-    3. Adding constraints and Jacobian or using automatic differentiation for missing Jacobians.
-    4. Managing solver settings and solution history.
-    5. Handling constraints and their validation.
-    """
+
+1. Minimal initialization with just the number of variables (`nvar`) specified.
+2. Basic initialization of an optimization problem with an objective function.
+3. Adding a provided gradient or using automatic differentiation for the gradient.
+4. Adding constraints and their Jacobian or using automatic differentiation for missing Jacobians.
+5. Automatic differentiation for a missing gradient.
+6. Automatic differentiation for a missing Jacobian.
+7. Modifying solver settings for the optimization problem.
+8. Resetting the solution history of a problem.
+9. Using `set_initial_guess!` to update the initial guess.
+10. Using `set_objective!` to update the objective function and gradient.
+11. Using `set_constraints!` to add or modify constraints and their Jacobian.
+"""
+
     
     using Sequoia
     
-    # Example 1: Basic Optimization Problem
+    # Example 1: Minimal Initialization with Just `nvar`
+    """
+    This example demonstrates how to initialize a `SEQUOIA_pb` problem with only the number of variables specified.
+
+    # Usage:
+        example_minimal_initialization()
+
+    # Expected Output:
+        Problem initialized with default settings: 
+        SEQUOIA_pb(2, [0.0, 0.0], true, nothing, nothing, nothing, nothing, Int64[], Int64[], SEQUOIA_Settings(:QPM, :LBFGS, false, 1.0e-6, 1000, 300.0, 1.0e-6, :GradientNorm, nothing, nothing, false, nothing, nothing, nothing, nothing), SEQUOIA_History(SEQUOIA_Solution_step[]), nothing)
+    """
+    function example_minimal_initialization()
+        pb = SEQUOIA_pb(2)  # Only specify the number of variables
+        println("Problem initialized with default settings: ")
+        println(pb)
+    end
+
+    # Example 2: Basic Optimization Problem
     """
     This example demonstrates how to initialize a `SEQUOIA_pb` optimization problem 
     with a simple quadratic objective function. No gradient, constraints, or Jacobian are provided.
@@ -34,7 +59,7 @@ This file contains example use cases for the `SEQUOIA_pb` struct and related fun
         println(pb)
     end
     
-    # Example 2: Optimization Problem with Provided Gradient
+    # Example 3: Optimization Problem with Provided Gradient
     """
     This example shows how to define an optimization problem with both an objective function 
     and its explicitly provided gradient.
@@ -57,7 +82,7 @@ This file contains example use cases for the `SEQUOIA_pb` struct and related fun
         println(pb.gradient([1.0, 2.0, 3.0]))
     end
     
-    # Example 3: Automatic Differentiation for Gradient
+    # Example 4: Automatic Differentiation for Gradient
     """
     This example demonstrates how `SEQUOIA_pb` uses automatic differentiation to compute the gradient 
     when it is not explicitly provided.
@@ -84,7 +109,7 @@ This file contains example use cases for the `SEQUOIA_pb` struct and related fun
         println("After validation, gradient is set: ", pb.gradient)
     end
     
-    # Example 4: Adding Constraints and Jacobian
+    # Example 5: Adding Constraints and Jacobian
     """
     This example illustrates how to add constraints and explicitly define a Jacobian matrix 
     to a `SEQUOIA_pb` problem.
@@ -111,7 +136,7 @@ This file contains example use cases for the `SEQUOIA_pb` struct and related fun
         println(pb)
     end
     
-    # Example 5: Automatic Differentiation for Jacobian
+    # Example 6: Automatic Differentiation for Jacobian
     """
     This example demonstrates how `SEQUOIA_pb` uses automatic differentiation to compute the Jacobian 
     when it is not explicitly provided.
@@ -143,7 +168,7 @@ This file contains example use cases for the `SEQUOIA_pb` struct and related fun
         println(pb.jacobian([1.0, 2.0, 3.0]))
     end
     
-    # Example 6: Updating Solver Settings
+    # Example 7: Updating Solver Settings
     """
     This example shows how to modify the solver settings for a `SEQUOIA_pb` optimization problem.
     
@@ -166,7 +191,7 @@ This file contains example use cases for the `SEQUOIA_pb` struct and related fun
         println("Updated solver settings: ", pb.solver_settings)
     end
     
-    # Example 7: Resetting Solution History
+    # Example 8: Resetting Solution History
     """
     This example demonstrates how to reset the solution history of a `SEQUOIA_pb` problem.
     
@@ -202,8 +227,65 @@ This file contains example use cases for the `SEQUOIA_pb` struct and related fun
         reset_solution_history!(pb)
         println("After resetting, solution history length: ", length(pb.solution_history.iterates))
     end
+
+    # Example 9: Using `set_initial_guess!`
+    """
+    This example demonstrates how to use the `set_initial_guess!` function to modify the initial guess for variables.
+
+    # Usage:
+        example_set_initial_guess()
+
+    # Expected Output:
+        Before updating initial guess: [0.0, 0.0, 0.0]
+        After updating initial guess: [2.0, 3.0, 4.0]
+    """
+    function example_set_initial_guess()
+        pb = SEQUOIA_pb(3; objective=x -> sum(x.^2))
+        println("Before updating initial guess: ", pb.x0)
+        set_initial_guess!(pb, [2.0, 3.0, 4.0])
+        println("After updating initial guess: ", pb.x0)
+    end
+
+    # Example 10: Using `set_objective!`
+    """
+    This example demonstrates how to use the `set_objective!` function to modify the objective function and gradient.
+
+    # Usage:
+        example_set_objective()
+
+    # Expected Output:
+        Before updating objective: 6.0
+        After updating objective: 3.0
+        New gradient: [1.0, 1.0, 1.0]
+    """
+    function example_set_objective()
+        pb = SEQUOIA_pb(3; objective=x -> sum(x.^2))
+        println("Before updating objective: ", pb.objective([1.0, 2.0, 3.0]))
+        set_objective!(pb, x -> sum(x), gradient=x -> ones(length(x)))
+        println("After updating objective: ", pb.objective([1.0, 2.0, 3.0]))
+        println("New gradient: ", pb.gradient([1.0, 2.0, 3.0]))
+    end
+
+    # Example 11: Using `set_constraints!`
+    """
+    This example demonstrates how to use the `set_constraints!` function to add or modify constraints and their Jacobian.
+
+    # Usage:
+        example_set_constraints()
+
+    # Expected Output:
+        Before setting constraints: nothing
+        After setting constraints: [0.0, 0.0]
+    """
+    function example_set_constraints()
+        pb = SEQUOIA_pb(3; objective=x -> sum(x.^2))
+        println("Before setting constraints: ", pb.constraints)
+        set_constraints!(pb, x -> [x[1] - 1, x[2] - 2], [1], [2], jacobian=x -> [1.0 0.0 0.0; 0.0 1.0 0.0])
+        println("After setting constraints: ", pb.constraints([1.0, 2.0, 3.0]))
+    end
     
     # Call all examples
+    example_minimal_initialization()
     example_basic_problem()
     example_gradient_provided()
     example_autodiff_gradient()
@@ -211,4 +293,8 @@ This file contains example use cases for the `SEQUOIA_pb` struct and related fun
     example_autodiff_jacobian()
     example_solver_settings()
     example_reset_history()
+    example_set_initial_guess()
+    example_set_objective()
+    example_set_constraints()
+
     

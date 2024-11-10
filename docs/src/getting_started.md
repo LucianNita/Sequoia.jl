@@ -6,6 +6,7 @@ To install `SEQUOIA.jl`, use Julia's package manager:
 ```julia
 using Pkg
 Pkg.add("Sequoia")
+```
 
 Basic Usage
 To configure an optimization problem, create a SEQUOIA_Settings object:
@@ -17,3 +18,4 @@ settings = SEQUOIA_Settings(
     conv_crit = :GradientNorm,
     max_iter_inner = 500
 )
+```

@@ -159,7 +159,7 @@ function validate_constraints!(pb::SEQUOIA_pb)
     end
 
     all_indices = sort(vcat(pb.eqcon, pb.ineqcon))
-    if !issubset(all_indices, collect(1:num_constraints))
+    if all_indices != collect(1:num_constraints)
         throw(ArgumentError("Equality and inequality indices must match valid constraint indices."))
     end
 
