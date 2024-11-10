@@ -1,9 +1,9 @@
 using ForwardDiff
 
-export validate_pb,validate_constraints!
+export validate_pb!
 
 """
-    validate_pb(pb::SEQUOIA_pb)
+    validate_pb!(pb::SEQUOIA_pb)
 
 Main validation function for a `SEQUOIA_pb` optimization problem. Ensures all required components of the problem 
 are correctly defined, including the number of variables, initial guess, objective function, gradient, constraints, 
@@ -17,7 +17,7 @@ and solver settings.
 
 - `ArgumentError` if any of the fields or functions in the problem are incorrectly defined or inconsistent.
 """
-function validate_pb(pb::SEQUOIA_pb) # Main validation function for SEQUOIA_pb
+function validate_pb!(pb::SEQUOIA_pb) # Main validation function for SEQUOIA_pb
     # Validate the number of variables
     validate_nvar(pb.nvar)
     
@@ -32,10 +32,6 @@ function validate_pb(pb::SEQUOIA_pb) # Main validation function for SEQUOIA_pb
 
     # Validate the constraints function and its consistency with the specified equality/inequality indices
     validate_constraints!(pb)
-
-    # Validate exit code
-    validate_code(pb.exitCode)
-
 end
 
 """
@@ -152,25 +148,22 @@ If no constraints are provided, a warning is issued. Also validates the Jacobian
 function validate_constraints!(pb::SEQUOIA_pb)
     if pb.constraints === nothing 
         @warn "No constraints are set. Ensure this is intended, as SEQUOIA is tailored for constrained optimization."
+        return
     end
 
-    if pb.constraints !== nothing 
-        # Ensure the number of constraints matches the number of specified indices
-        num_constraints = length(pb.constraints(pb.x0))
-        total_specified_constraints = length(pb.eqcon) + length(pb.ineqcon)
-        if num_constraints != total_specified_constraints
-            throw(ArgumentError("The number of constraints returned by the constraint function does not match the total number of specified constraints (equality + inequality)."))
-        end
+    num_constraints = length(pb.constraints(pb.x0))
+    total_specified_constraints = length(pb.eqcon) + length(pb.ineqcon)
 
-        # Ensure all indices are covered exactly once by eqcon and ineqcon
-        all_indices = sort(vcat(pb.eqcon, pb.ineqcon))
-        if all_indices != collect(1:num_constraints)
-            throw(ArgumentError("Indices for equality and inequality constraints must cover all constraint indices exactly once."))
-        end
-
-        # Validate the Jacobian
-        validate_jacobian!(pb)
+    if num_constraints != total_specified_constraints
+        throw(ArgumentError("The constraint function returns $num_constraints constraints, but $total_specified_constraints indices are defined."))
     end
+
+    all_indices = sort(vcat(pb.eqcon, pb.ineqcon))
+    if !issubset(all_indices, collect(1:num_constraints))
+        throw(ArgumentError("Equality and inequality indices must match valid constraint indices."))
+    end
+
+    validate_jacobian!(pb)
 end
 
 """
@@ -199,26 +192,6 @@ function validate_jacobian!(pb::SEQUOIA_pb)
     # Check if the result is a matrix of Float64 and has the correct size (num_constraints x nvar)
     if size(result) != (num_constraints, pb.nvar) #|| !isa(result, Matrix{Float64}) 
         throw(ArgumentError("The Jacobian must be a matrix of size (num_constraints, nvar), where num_constraints is the number of constraints and nvar is the number of variables.")) # of Float64
-    end
-end
-
-
-"""
-    validate_code(code::Symbol)
-
-Validates the `exitCode` to ensure it is a valid symbol from the predefined list of exit codes.
-
-# Arguments
-
-- `code`: The exit code symbol to validate.
-
-# Throws
-
-- `ArgumentError` if the `code` is not in the predefined list `ExitCode`.
-"""
-function validate_code(code::Symbol)
-    if !(code in ExitCode)
-        throw(ArgumentError("Invalid exit code: `$code`. Must be one of: $ExitCode."))
     end
 end
 

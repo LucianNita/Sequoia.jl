@@ -8,93 +8,105 @@ export SEQUOIA_pb,
        update_exit_code!,
        reset_solution_history!
 
-
-ExitCode = [
-    :NotCalled,                # Problem not yet optimized
-    :OptimalityReached,        # Optimal solution found
-    :Infeasibility,            # Problem is infeasible
-    :MaxIterations,            # Reached maximum number of iterations
-    :Unbounded,                # Problem is unbounded
-    :SolverError,              # Solver encountered an error
-]
-
 """
     SEQUOIA_pb
 
-The `SEQUOIA_pb` struct defines an optimization problem to be solved using SEQUOIA. It includes fields for the problem dimension (`nvar`), the objective function, constraints, bounds, solver settings, and solution history.
+The `SEQUOIA_pb` struct represents an optimization problem to be solved using the SEQUOIA framework. It encapsulates all necessary components of the problem, including the problem size, objective function, constraints, solver settings, and solution history.
 
 # Fields
 
-- `nvar::Int`: The number of variables in the optimization problem (problem dimension).
-- `x0::Vector{Float64}`: Initial guess for the variables, defaulting to a zero vector of size `nvar`.
-- `is_minimization::Bool`: A flag indicating whether the problem is a minimization problem (`true`) or a maximization problem (`false`). Defaults to `true` (minimization).
-- `objective::Union{Nothing, Function}`: The objective function to be minimized or maximized. Defaults to `nothing`.
-- `gradient::Union{Nothing, Function}`: The gradient of the objective function. Defaults to `nothing`.
-- `constraints::Union{Nothing, Function}`: A function returning a vector of constraints. Defaults to `nothing`.
-- `jacobian::Union{Nothing, Function}`: The Jacobian of the constraints. Defaults to `nothing`.
+- `nvar::Int`: The number of variables in the optimization problem (problem dimension). Must be a positive integer.
+- `x0::Union{Nothing, Vector{Float64}}`: The initial guess for the variables. If set to `nothing`, it defaults to a zero vector of size `nvar`.
+- `is_minimization::Bool`: Indicates whether the problem is a minimization problem (`true`) or a maximization problem (`false`). Defaults to `true` (minimization).
+- `objective::Union{Nothing, Function}`: The objective function to be minimized or maximized. Defaults to `nothing`. If set, must return a scalar value.
+- `gradient::Union{Nothing, Function}`: The gradient of the objective function. Defaults to `nothing`. If not provided, it will be computed using automatic differentiation.
+- `constraints::Union{Nothing, Function}`: A function that returns the vector of constraints, or `nothing` if the problem has no constraints.
+- `jacobian::Union{Nothing, Function}`: The Jacobian of the constraints. Defaults to `nothing`. If not provided, it will be computed using automatic differentiation.
 - `eqcon::Vector{Int}`: Indices of equality constraints, assuming `c_i(x) = 0`. Defaults to an empty vector.
 - `ineqcon::Vector{Int}`: Indices of inequality constraints, assuming `c_i(x) ≤ 0`. Defaults to an empty vector.
-- `solver_settings::SEQUOIA_Settings`: Settings for the optimization solver, including the algorithm to use and tolerance levels. Defaults to a pre-defined set of settings.
-- `solution_history::SEQUOIA_History`: Stores the history of all solution iterations. Defaults to an empty `SEQUOIA_History` object.
-- `exitCode::Symbol`: The termination status of the solver, defaulting to `:NotCalled`.
-- `cutest_nlp::Union{Nothing, CUTEst.CUTEstModel}`: An optional field to store a handle to a CUTEst model, used for interfacing with external solvers or benchmarks. Defaults to `nothing`.
+- `solver_settings::SEQUOIA_Settings`: Solver settings defining the optimization method, tolerances, and other parameters. Defaults to a `SEQUOIA_Settings` instance with preset configurations.
+- `solution_history::SEQUOIA_History`: Stores the history of solution steps for the optimization process. Defaults to an empty `SEQUOIA_History`.
+- `cutest_nlp::Union{Nothing, CUTEst.CUTEstModel}`: An optional field for storing a CUTEst model instance, used for interfacing with external solvers or benchmark problems. Defaults to `nothing`.
+
+# Constructor
+
+## Full Constructor
+    SEQUOIA_pb(nvar::Int;
+               x0::Union{Nothing, Vector{Float64}} = nothing,
+               is_minimization::Bool = true,
+               objective::Union{Nothing, Function} = nothing,
+               gradient::Union{Nothing, Function} = nothing,
+               constraints::Union{Nothing, Function} = nothing,
+               jacobian::Union{Nothing, Function} = nothing,
+               eqcon::Vector{Int} = Int[],
+               ineqcon::Vector{Int} = Int[],
+               solver_settings::SEQUOIA_Settings = SEQUOIA_Settings(:QPM, :LBFGS, false, 1e-6, 1000, 300, 1e-6),
+               solution_history::SEQUOIA_History = SEQUOIA_History(),
+               cutest_nlp::Union{Nothing, CUTEst.CUTEstModel} = nothing)
+
+Constructor for the `SEQUOIA_pb` struct, representing an optimization problem.
+
+# Arguments
+- `nvar::Int`: The number of variables in the problem. Must be a positive integer.
+- `x0::Union{Nothing, Vector{Float64}}` (optional): The initial guess for the variables. Defaults to a zero vector of size `nvar` if not provided.
+- `is_minimization::Bool` (optional): Specifies whether the problem is a minimization (`true`) or maximization (`false`). Defaults to `true`.
+- `objective::Union{Nothing, Function}` (optional): The objective function for the problem. Defaults to `nothing`.
+- `gradient::Union{Nothing, Function}` (optional): The gradient of the objective function. Defaults to `nothing`. If not provided, automatic differentiation will be used.
+- `constraints::Union{Nothing, Function}` (optional): A function returning the vector of constraints. Defaults to `nothing`.
+- `jacobian::Union{Nothing, Function}` (optional): The Jacobian matrix of the constraints. Defaults to `nothing`. If not provided, automatic differentiation will be used.
+- `eqcon::Vector{Int}` (optional): A vector specifying the indices of equality constraints. Defaults to an empty vector.
+- `ineqcon::Vector{Int}` (optional): A vector specifying the indices of inequality constraints. Defaults to an empty vector.
+- `solver_settings::SEQUOIA_Settings` (optional): The solver settings for the optimization problem. Defaults to a preset `SEQUOIA_Settings` instance.
+- `solution_history::SEQUOIA_History` (optional): The solution history for the problem. Defaults to an empty `SEQUOIA_History`.
+- `cutest_nlp::Union{Nothing, CUTEst.CUTEstModel}` (optional): An optional CUTEst model instance. Defaults to `nothing`.
+
+# Returns
+A `SEQUOIA_pb` instance representing the optimization problem.
+
+# Throws
+- `ArgumentError` if `nvar` is not a positive integer.
+- `ArgumentError` if the length of `x0` (if provided) does not match `nvar`.
 """
 mutable struct SEQUOIA_pb
-    nvar::Int
-    x0::Vector{Float64}
-    
-    is_minimization::Bool
-    objective::Union{Nothing, Function}
-    gradient::Union{Nothing, Function}
+    nvar::Int                                     # Number of variables
+    x0::Union{Nothing, Vector{Float64}}           # Initial guess for variables
 
-    constraints::Union{Nothing, Function}
-    jacobian::Union{Nothing, Function}
-    eqcon::Vector{Int}
-    ineqcon::Vector{Int}
+    is_minimization::Bool                         # Whether this is a minimization problem
+    objective::Union{Nothing, Function}           # Objective function
+    gradient::Union{Nothing, Function}            # Gradient of the objective
 
-    solver_settings::SEQUOIA_Settings
-    solution_history::SEQUOIA_History
-    exitCode::Symbol
+    constraints::Union{Nothing, Function}         # Constraint function
+    jacobian::Union{Nothing, Function}            # Jacobian of the constraints
+    eqcon::Vector{Int}                            # Indices of equality constraints
+    ineqcon::Vector{Int}                          # Indices of inequality constraints
 
-    cutest_nlp::Union{Nothing, CUTEst.CUTEstModel}
+    solver_settings::SEQUOIA_Settings             # Solver settings
+    solution_history::SEQUOIA_History             # Solution history
 
-    """
+    cutest_nlp::Union{Nothing, CUTEst.CUTEstModel} # Optional CUTEst model
+
     # Constructor
-
-    The `SEQUOIA_pb` constructor requires only the number of variables `nvar`, and provides default values for all other fields. It allows the creation of an optimization problem with varying levels of complexity, from a simple unconstrained optimization to a more complex problem with constraints and a defined solver setup.
-
-    # Arguments
-
-    - `nvar::Int`: The number of variables in the problem (required).
-    - `x0::Vector{Float64}`: Initial guess for the variables. Defaults to a zero vector of size `nvar`.
-    - `is_minimization::Bool`: A flag for minimization (`true`) or maximization (`false`). Defaults to `true`.
-    - `objective::Union{Nothing, Function}`: The objective function for the problem. Defaults to `nothing`.
-    - `gradient::Union{Nothing, Function}`: The gradient of the objective function. Defaults to `nothing`.
-    - `constraints::Union{Nothing, Function}`: A function returning the vector of constraints. Defaults to `nothing`.
-    - `jacobian::Union{Nothing, Function}`: The Jacobian matrix of the constraints. Defaults to `nothing`.
-    - `eqcon::Vector{Int}`: Indices of equality constraints. Defaults to an empty vector.
-    - `ineqcon::Vector{Int}`: Indices of inequality constraints. Defaults to an empty vector.
-    - `solver_settings::SEQUOIA_Settings`: The settings for the solver. Defaults to `SEQUOIA_Settings(:QPM,:LBFGS,false,10^-6,1000,300)`.
-    - `solution_history::SEQUOIA_History`: The history of solution steps. Defaults to an empty `SEQUOIA_History`.
-    - `exitCode::Symbol`: The termination status of the solver. Defaults to `:NotCalled`.
-    - `cutest_nlp::Union{Nothing, CUTEst.CUTEstModel}`: Optional CUTEst model handle. Defaults to `nothing`.
-    """
-    function SEQUOIA_pb(nvar::Int; 
-                        x0::Vector{Float64} = zeros(nvar),
-                        is_minimization::Bool = true,
-                        objective::Union{Nothing, Function} = nothing,
-                        gradient::Union{Nothing, Function} = nothing,
-                        constraints::Union{Nothing, Function} = nothing,
-                        jacobian::Union{Nothing, Function} = nothing,
-                        eqcon::Vector{Int} = Int[],
-                        ineqcon::Vector{Int} = Int[],
-                        solver_settings::SEQUOIA_Settings = SEQUOIA_Settings(:QPM,:LBFGS,false,10^-6,1000,300,10^-6),
-                        solution_history::SEQUOIA_History = SEQUOIA_History(),
-                        exitCode::Symbol = :NotCalled,
-                        cutest_nlp::Union{Nothing, CUTEst.CUTEstModel} = nothing)
+    function SEQUOIA_pb(
+        nvar::Int;
+        x0::Union{Nothing, Vector{Float64}} = nothing,
+        is_minimization::Bool = true,
+        objective::Union{Nothing, Function} = nothing,
+        gradient::Union{Nothing, Function} = nothing,
+        constraints::Union{Nothing, Function} = nothing,
+        jacobian::Union{Nothing, Function} = nothing,
+        eqcon::Vector{Int} = Int[],
+        ineqcon::Vector{Int} = Int[],
+        solver_settings::SEQUOIA_Settings = SEQUOIA_Settings(:QPM, :LBFGS, false, 1e-6, 1000, 300.0, 1e-6),
+        solution_history::SEQUOIA_History = SEQUOIA_History(),
+        cutest_nlp::Union{Nothing, CUTEst.CUTEstModel} = nothing
+    )
         validate_nvar(nvar)
-        return new(nvar, x0, is_minimization, objective, gradient, constraints, jacobian,
-                   eqcon, ineqcon, solver_settings, solution_history, exitCode, cutest_nlp)
+        if x0 === nothing
+            x0 = zeros(nvar)
+        else
+            validate_x0(x0, nvar)
+        end
+        return new(nvar, x0, is_minimization, objective, gradient, constraints, jacobian, eqcon, ineqcon, solver_settings, solution_history, cutest_nlp)
     end
 end
 
