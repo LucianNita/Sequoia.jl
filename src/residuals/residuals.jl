@@ -1,7 +1,7 @@
 export r0, r0_gradient!, r, r_gradient!, exact_constraint_violation, exact_augmented_constraint_violation,
        qpm_obj, qpm_grad!, r0_gradient!, auglag_obj, auglag_grad!, update_lag_mult!,
        ipm_obj, ipm_grad!, update_ipm_mult!, res
-       
+#=       
 function r0(x,problem::CUTEstModel)
     constraint_val = cons(problem, x)
     eq_penalty_term = 0.0;
@@ -159,7 +159,7 @@ function r0_gradient!(grad_storage, x, problem::CUTEstModel)
     grad_storage .= grad_eq_penalty .+ grad_ineq_penalty .+ grad_var_penalty
 
 end
-
+=#
 function r(x,tk,problem::CUTEstModel)
     cviol = r0(x,problem);
     obj_val = 0.0;
@@ -209,7 +209,7 @@ function exact_augmented_constraint_violation(x,tk,problem::CUTEstModel)
 
     return obj_violation + exact_constraint_violation(x,problem)
 end
-
+#=
 function qpm_obj(x,μ,problem::CUTEstModel)
     return obj(problem,x)+μ*r0(x,problem)
 end
@@ -276,6 +276,7 @@ function qpm_grad!(g, x, μ, problem::SEQUOIA_pb)
     r0_gradient!(g,x,problem);
     g .=  grad_obj .+ μ .* g;
 end
+=#
 
 function exact_constraint_violation(x,problem::SEQUOIA_pb)
     constraint_val = problem.constraints(x)
@@ -651,7 +652,7 @@ function ipm_grad!(g, x_a, μ, problem::SEQUOIA_pb)
     g .= ForwardDiff.gradient(z -> ipm_obj(z, μ, problem), x_a)
 
 end
-
+#=
 function res(x,problem::CUTEstModel)
     
     jeq=length(problem.meta.jfix);
@@ -701,6 +702,7 @@ function res(x,problem::CUTEstModel)
 
     return violation
 end
+=#
 
 function r_slack(x,s,problem::CUTEstModel)
     cons=res(x,problem);

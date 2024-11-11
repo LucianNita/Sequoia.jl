@@ -21,6 +21,10 @@ include("algorithms/sequoia.jl");
 
 include("residuals/cutest_constraints.jl")
 include("residuals/feasibility_residuals.jl")
+include("residuals/qpm_residuals.jl")
+include("residuals/alm_residuals.jl")
+include("residuals/ipm_residuals.jl")
+include("residuals/sequoia_residuals.jl")
 #include("residuals/residuals.jl")
 
 end # module Sequoia
