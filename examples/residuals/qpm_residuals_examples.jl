@@ -1,5 +1,6 @@
 # Example Use Cases for `qpm_obj` and `qpm_grad!`
 using CUTEst
+using Sequoia
 
 # Example 1: Compute the quadratic penalty objective for a SEQUOIA problem
 """
@@ -10,7 +11,7 @@ This example demonstrates how to compute the quadratic penalty objective functio
 
 # Expected Output:
     Quadratic penalty objective value:
-    12.5
+    24.0
 """
 function example_qpm_obj_sequoia()
     # Create a SEQUOIA problem instance
@@ -43,7 +44,7 @@ This example demonstrates how to compute the gradient of the quadratic penalty o
 
 # Expected Output:
     Gradient of the quadratic penalty objective:
-    [8.0, 14.0, 6.0]
+    [-3.0, -1.0, 6.0]
 """
 function example_qpm_grad_sequoia()
     # Create a SEQUOIA problem instance
@@ -77,7 +78,7 @@ This example demonstrates how to compute the quadratic penalty objective functio
 
 # Expected Output:
     Quadratic penalty objective value:
-    98.25
+    271.01
 """
 function example_qpm_obj_cutest()
     # Initialize a CUTEst problem
@@ -103,7 +104,7 @@ This example demonstrates how to compute the gradient of the quadratic penalty o
 
 # Expected Output:
     Gradient of the quadratic penalty objective:
-    [-25.0, 50.0]
+    [-386.02, 36.0]
 """
 function example_qpm_grad_cutest()
     # Initialize a CUTEst problem
