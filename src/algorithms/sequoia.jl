@@ -101,5 +101,5 @@ function sequoia_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, tk,
         add_iterate!(problem.solution_history, step)  # Add step to history
     end
 
-    return time, x, tu, iteration
+    return time, x, tu, iteration, inner_iterations
 end

@@ -19,6 +19,8 @@ include("algorithms/auglag.jl");
 include("algorithms/ipm.jl");
 include("algorithms/sequoia.jl");
 
-include("algorithms/residuals.jl")
+include("residuals/cutest_constraints.jl")
+include("residuals/feasibility_residuals.jl")
+#include("residuals/residuals.jl")
 
 end # module Sequoia

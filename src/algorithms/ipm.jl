@@ -1,7 +1,7 @@
 export ipm_solve!
 
 # Interior Point Method (IPM) implementation
-function ipm_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previous_fval, iteration)
+function ipm_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previous_fval, iteration, inner_iterations)
 
     # Initialize variables
     penalty_init=problem.solver_settings.solver_params[1];
@@ -96,6 +96,6 @@ function ipm_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previou
         add_iterate!(problem.solution_history, step)  # Add step to history
     end    
 
-    return time, x, previous_fval, iteration
+    return time, x, previous_fval, iteration, inner_iterations
 end
 

@@ -52,12 +52,7 @@ function cutest_to_sequoia(cutest_problem::CUTEstModel)::SEQUOIA_pb
         cutest_nlp=cutest_problem
     )
     
-    try
-        validate_pb!(pb)
-    catch e
-        println("Validation failed for the converted SEQUOIA_pb instance. Error: ", e)
-        rethrow(e)
-    end
+    validate_pb!(pb)
 
     return pb
 end

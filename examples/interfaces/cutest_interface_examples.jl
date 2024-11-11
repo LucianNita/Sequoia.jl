@@ -120,12 +120,8 @@ function example_validate_sequoia_instance()
     cutest_problem = CUTEstModel("HS35")  # Example problem
     pb = cutest_to_sequoia(cutest_problem)
     println("Validating converted SEQUOIA_pb instance...")
-    try
-        validate_pb!(pb)
-        println("Validation successful!")
-    catch e
-        println("Validation failed: ", e)
-    end
+    validate_pb!(pb)
+    println("Validation successful!")
     finalize(cutest_problem)
 end
 

@@ -1,6 +1,6 @@
 export feasibility_solve!
 
-function feasibility_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previous_fval)
+function feasibility_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previous_fval, inner_iterations)
     if problem.cutest_nlp === nothing
         obj_aug_fn = x -> r0(x,problem)
         grad_aug_fn! = (g, x) -> r0_gradient!(g, x, problem)
@@ -15,6 +15,7 @@ function feasibility_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x,
     x = result.minimizer
     time+=result.time_run;
     previous_fval=result.minimum;
+    inner_iterations += result.iterations
 
     solver_status = Optim.converged(result) ? :small_residual : :infeasible  # Solver status
 
@@ -22,5 +23,5 @@ function feasibility_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x,
     step = SEQUOIA_Solution_step(0, result.minimum, solver_status, result.time_run, result.iterations , x, result.minimum, problem.gradient(x), problem.constraints(x))
     add_iterate!(problem.solution_history, step)  # Add step to history
 
-    return time, x, previous_fval
+    return time, x, previous_fval, inner_iterations
 end

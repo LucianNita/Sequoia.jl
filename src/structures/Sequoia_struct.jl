@@ -1,4 +1,5 @@
 using CUTEst
+using SparseArrays
 
 export SEQUOIA_pb,
        set_initial_guess!,

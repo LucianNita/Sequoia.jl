@@ -1,12 +1,9 @@
 import Optim
 using LinearAlgebra
-using SparseArrays
 
 export solve!
 
 function solve!(problem::SEQUOIA_pb)
-    #validate_pb(problem)
-
     # Inner solver from SEQUOIA_Settings
     inner_solver = choose_inner_solver(problem.solver_settings.inner_solver)
     options = set_options(problem.solver_settings)
@@ -19,7 +16,7 @@ function solve!(problem::SEQUOIA_pb)
     previous_fval = Inf  # Store the previous objective function value
 
     if problem.solver_settings.feasibility
-        time, x, previous_fval = feasibility_solve!(problem,inner_solver,options, time, x, previous_fval)
+        time, x, previous_fval, inner_iterations = feasibility_solve!(problem,inner_solver,options, time, x, previous_fval, inner_iterations)
     end
 
     iteration = 1  # Initialize iteration counter
@@ -30,7 +27,7 @@ function solve!(problem::SEQUOIA_pb)
         elseif length(problem.solver_settings.solver_params) != 4
             throw(ArgumentError("Number of solver parameters is incompatible with the solver. Current solver chosen $(problem.solver_settings.outer_method). Number of expected parameters 4, got $(length(problem.solver_settings.solver_params)). Please modify the settings by either choosing a different solver, providing an appropriate number of parameters, or leaving the optional field free."))
         end
-        time, x, previous_fval, iteration = qpm_solve!(problem, inner_solver, options, time, x, previous_fval, iteration)
+        time, x, previous_fval, iteration, inner_iterations = qpm_solve!(problem, inner_solver, options, time, x, previous_fval, iteration, inner_iterations)
 
     elseif problem.solver_settings.outer_method == :AugLag
         
@@ -44,7 +41,7 @@ function solve!(problem::SEQUOIA_pb)
         elseif length(problem.solver_settings.solver_params) != 4+clen
             throw(ArgumentError("Number of solver parameters is incompatible with the solver. Current solver chosen $(problem.solver_settings.outer_method). Number of expected parameters $(4+length(problem.eq_indices)+length(problem.ineq_indices)), got $(length(problem.solver_settings.solver_params)). Please modify the settings by either choosing a different solver, providing an appropriate number of parameters, or leaving the optional field free."))
         end
-        time, x, previous_fval, iteration = alm_solve!(problem, inner_solver, options, time, x, previous_fval, iteration)
+        time, x, previous_fval, iteration, inner_iterations = alm_solve!(problem, inner_solver, options, time, x, previous_fval, iteration, inner_iterations)
         
     elseif problem.solver_settings.outer_method == :IntPt
 
@@ -61,7 +58,7 @@ function solve!(problem::SEQUOIA_pb)
         if problem.solver_settings.cost_tolerance === nothing
             problem.solver_settings.cost_tolerance = 10^(-6);
         end
-        time, x, previous_fval, iteration = ipm_solve!(problem, inner_solver, options, time, x, previous_fval, iteration)
+        time, x, previous_fval, iteration, inner_iterations = ipm_solve!(problem, inner_solver, options, time, x, previous_fval, iteration, inner_iterations)
 
     elseif problem.solver_settings.outer_method == :SEQUOIA
 
@@ -70,7 +67,7 @@ function solve!(problem::SEQUOIA_pb)
         elseif length(problem.solver_settings.solver_params) != 3
             throw(ArgumentError("Number of solver parameters is incompatible with the solver. Current solver chosen $(problem.solver_settings.outer_method). Number of expected parameters 3, got $(length(problem.solver_settings.solver_params)). Please modify the settings by either choosing a different solver, providing an appropriate number of parameters, or leaving the optional field free."))
         end
-        time, x, previous_fval, iteration = sequoia_solve!(problem, inner_solver, options, time, x, previous_fval, iteration, inner_iterations)
+        time, x, previous_fval, iteration, inner_iterations = sequoia_solve!(problem, inner_solver, options, time, x, previous_fval, iteration, inner_iterations)
 
 
     else
