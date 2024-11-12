@@ -1,6 +1,9 @@
-export r0, r0_gradient!, r, r_gradient!, exact_constraint_violation, exact_augmented_constraint_violation,
-       qpm_obj, qpm_grad!, r0_gradient!, auglag_obj, auglag_grad!, update_lag_mult!,
-       ipm_obj, ipm_grad!, update_ipm_mult!, res
+## Legacy version for archive only, not to be used
+
+#export r0, r0_gradient!, r, r_gradient!, exact_constraint_violation, exact_augmented_constraint_violation,
+#       qpm_obj, qpm_grad!, r0_gradient!, auglag_obj, auglag_grad!, update_lag_mult!,
+#       ipm_obj, ipm_grad!, update_ipm_mult!, res
+
 #=       
 function r0(x,problem::CUTEstModel)
     constraint_val = cons(problem, x)
@@ -160,6 +163,7 @@ function r0_gradient!(grad_storage, x, problem::CUTEstModel)
 
 end
 =#
+#=
 function r(x,tk,problem::CUTEstModel)
     cviol = r0(x,problem);
     obj_val = 0.0;
@@ -187,8 +191,8 @@ function r_gradient!(grad_storage, x, tk, problem::CUTEstModel)
     grad_storage .= grad_storage .+ grad_obj;
 
 end
-
-
+=#
+#=
 function exact_constraint_violation(x,problem::CUTEstModel)
     constraint_val = cons(problem, x)
     eq_violation = norm(constraint_val[problem.meta.jfix]-problem.meta.lcon[problem.meta.jfix])  # Equality violation
@@ -209,6 +213,7 @@ function exact_augmented_constraint_violation(x,tk,problem::CUTEstModel)
 
     return obj_violation + exact_constraint_violation(x,problem)
 end
+=#
 #=
 function qpm_obj(x,μ,problem::CUTEstModel)
     return obj(problem,x)+μ*r0(x,problem)
@@ -278,13 +283,16 @@ function qpm_grad!(g, x, μ, problem::SEQUOIA_pb)
 end
 =#
 
+#=
 function exact_constraint_violation(x,problem::SEQUOIA_pb)
     constraint_val = problem.constraints(x)
     eq_violation = norm(constraint_val[problem.eqcon])  # Equality violation
     ineq_violation = norm(max.(0.0, constraint_val[problem.ineqcon]))  # Inequality violation
     return eq_violation + ineq_violation
 end
+=#
 
+#=
 function r(x,tk,problem::SEQUOIA_pb)
     cviol = r0(x,problem);
     obj_val = 0.0;
@@ -313,13 +321,15 @@ function r_gradient!(grad_storage, x, tk, problem::SEQUOIA_pb)
     grad_storage .= grad_storage .+ grad_obj;
 
 end
-
+=#
+#=
 function exact_augmented_constraint_violation(x,tk,problem::SEQUOIA_pb)
     obj_violation = max(0.0, problem.objective(x)-tk)
 
     return obj_violation + exact_constraint_violation(x,problem)
 end
-
+=#
+#=
 function auglag_obj(x, μ, λ, problem::SEQUOIA_pb)
     constraint_val = problem.constraints(x)
     for i in problem.ineqcon
@@ -606,6 +616,8 @@ function update_lag_mult!(x, μ, λ, problem::CUTEstModel)
 
 end
 
+=#
+
 function ipm_obj(x_a, μ, problem::SEQUOIA_pb)
     x=x_a[1:problem.nvar];
     iq=length(problem.ineqcon);
@@ -875,3 +887,68 @@ function ipm_grad!(g, x_a, μ, problem::CUTEstModel)
 
 
 end
+
+#=
+function auglag_obj(x, μ, λ, problem::CUTEstModel)
+    # Compute residuals
+    con = res(x, problem)
+
+    # Determine residual partitions
+    total_eq_con = length(problem.meta.jfix) + length(problem.meta.ifix)
+    total_low_bound = length(problem.meta.jlow) + length(problem.meta.ilow)
+    total_up_bound = length(problem.meta.jupp) + length(problem.meta.iupp)
+    total_range = length(problem.meta.jrng) + length(problem.meta.irng)
+
+    # Handle range constraints (max(0, ...))
+    range_start = total_eq_con + total_low_bound + total_up_bound
+    range_end = range_start + total_range
+
+    # Update residuals for Jacobian range constraints
+    con[range_start+1:range_start+length(problem.meta.jrng)] .= max.(
+        0.0,
+        con[range_start+1:range_start+length(problem.meta.jrng)],
+        con[range_start+length(problem.meta.jrng)+1:range_start+2*length(problem.meta.jrng)]
+    )
+
+    # Update residuals for variable range constraints
+    con[range_start+length(problem.meta.jrng)+1:range_end] .= max.(
+        0.0,
+        con[range_start+2*length(problem.meta.jrng)+1:range_end+length(problem.meta.jrng)],
+        con[range_end+1:range_end+total_range]
+    )
+
+    # Compute the augmented Lagrangian objective
+    obj_val = obj(problem, x)
+    penalty_term = 0.5 * μ * (sum(con[1:total_eq_con].^2) + sum(max.(0, con[total_eq_con+1:end]).^2))
+    lagrange_term = λ' * con[1:range_end]
+
+    return obj_val + penalty_term + lagrange_term
+end
+
+function update_lag_mult!(x, μ, λ, problem::CUTEstModel)
+
+    con = res(x, problem)
+        
+    # Determine residual partitions
+    total_eq_con = length(problem.meta.jfix) + length(problem.meta.ifix)
+    total_low_bound = length(problem.meta.jlow) + length(problem.meta.ilow)
+    total_up_bound = length(problem.meta.jupp) + length(problem.meta.iupp)
+    total_range = length(problem.meta.jrng) + length(problem.meta.irng)
+    
+    # Handle range constraints (max(0, ...))
+    range_start = total_eq_con + total_low_bound + total_up_bound
+    range_end = range_start + total_range
+    
+    # Update residuals for Jacobian range constraints
+    con[range_start+1:range_start+length(problem.meta.jrng)] .= max.(0.0,
+                                                                     con[range_start+1:range_start+length(problem.meta.jrng)],
+                                                                     con[range_start+length(problem.meta.jrng)+1:range_start+2*length(problem.meta.jrng)])
+    
+    # Update residuals for variable range constraints
+    con[range_start+length(problem.meta.jrng)+1:range_end] .= max.(0.0,
+                                                                   con[range_start+2*length(problem.meta.jrng)+1:range_end+length(problem.meta.jrng)],
+                                                                   con[range_end+1:range_end+total_range])
+    λ[1:total_eq_con] .= λ[1:total_eq_con] .+ μ .* con[1:total_eq_con]
+    λ[total_eq_con+1:end] .= max.(0.0, λ[total_eq_con+1:end] .+ μ .* con[total_eq_con+1:range_end])
+end
+=#
