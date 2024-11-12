@@ -21,7 +21,7 @@ using LinearAlgebra
         x = problem.x0
         μ = 2.5
         qpm_value = qpm_obj(x, μ, problem)
-        @test isapprox(qpm_value, 24.0, atol=1e-6) 
+        @test isapprox(qpm_value, 19.0, atol=1e-6) 
     end
 
     # Test 2: Quadratic penalty gradient for a SEQUOIA problem

@@ -62,7 +62,7 @@ This example demonstrates how to compute the residual function `r0` for a `SEQUO
 
 # Expected Output:
     Residual value:
-    4.0
+    2.0
 """
 function example_r0_sequoia()
     # Create a SEQUOIA problem instance

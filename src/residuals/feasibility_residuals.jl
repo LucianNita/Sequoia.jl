@@ -76,7 +76,7 @@ r_0(x) = 1/2 * (sum(con[i]^2 for i in eqcon) + sum(max(0, con[j])^2 for j in ine
 """
 function r0(x,problem::SEQUOIA_pb)
     constraint_val = problem.constraints(x);
-    return 0.5 * ( sum( (constraint_val[problem.eqcon]).^2 ) + sum( (constraint_val[problem.ineqcon]).^2 ) )
+    return 0.5 * ( sum( (constraint_val[problem.eqcon]).^2 ) + sum( (max.(0.0, constraint_val[problem.ineqcon])).^2 ) )
 end
 
 """

@@ -11,7 +11,7 @@ This example demonstrates how to compute the quadratic penalty objective functio
 
 # Expected Output:
     Quadratic penalty objective value:
-    24.0
+    19.0
 """
 function example_qpm_obj_sequoia()
     # Create a SEQUOIA problem instance

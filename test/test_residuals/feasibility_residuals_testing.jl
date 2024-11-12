@@ -40,7 +40,7 @@ using CUTEst
         )
         x = problem.x0  # Use the initial guess for x
 
-        expected_residual = 4.0  # Replace with expected value for your problem
+        expected_residual = 2.0  # Replace with expected value for your problem
         computed_residual = r0(x, problem)
 
         @test computed_residual ≈ expected_residual atol=1e-5
