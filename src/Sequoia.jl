@@ -25,6 +25,5 @@ include("residuals/qpm_residuals.jl")
 include("residuals/alm_residuals.jl")
 include("residuals/ipm_residuals.jl")
 include("residuals/sequoia_residuals.jl")
-#include("residuals/residuals.jl")
 
 end # module Sequoia
