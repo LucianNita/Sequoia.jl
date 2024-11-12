@@ -1,70 +1,110 @@
-#=
-# Example usage: (for testing)
+using CUTEst
+using Sequoia
+using Optim
+using NLPModels
 
-# Define a simple objective function: minimize f(x) = x₁² + x₂²
-obj_fn = x -> x[1]^2 + x[2]^2
-# Gradient of the objective function
-grad_fn = x -> [2*x[1], 2*x[2]]
-# Define a constraint function g(x) = [x₁ + x₂, x₁]
-cons_fn = x -> [x[1] + x[2]-1, x[1]-0.3]
-# Jacobian of the constraint function
-cons_jac_fn = x -> [1.0 1.0; 1.0 0.0]
+# Example 1: QPM solve for a SEQUOIA problem
+"""
+This example demonstrates how to use `qpm_solve!` for a `SEQUOIA_pb` problem.
 
-# Indices for equality and inequality constraints
-eq_indices = [1]
-ineq_indices = [2]
-
-# Initial guess
-x0 = [0.25, 0.75]
-
-# Solve using Quadratic Penalty Method with Optim.jl and the chosen inner solver
-inner_solver = Optim.LBFGS()
-
-=#
-
-using Optim, Sequoia
-using LinearAlgebra
-
-# Example 1: Minimizing a quadratic function with an equality constraint
-#function example_simple_equality()
-    # Objective: Minimize f(x) = (x1 - 2)^2 + (x2 - 3)^2
-    objective_fn = x -> (x[1] - 10.0)^2 + (x[2] - 2.0)^2
-
-    # Constraint: x1 + x2 - 5 = 0
-    constraints_fn = x -> [x[1] + x[2] - 5.0]
-
-    # Gradient of the objective
-    gradient_fn = x -> [2.0 * (x[1] - 10.0), 2.0 * (x[2] - 2.0)]
-
-    # Jacobian of the constraint
-    jacobian_fn = x -> [1.0 1.0]
-
-    # Initialize SEQUOIA_pb problem
-    pb = SEQUOIA_pb(
-        2,
-        x0 = [0.0, 0.0],                     # Initial guess
-        is_minimization = true,               # Minimization problem
-        objective = objective_fn,             # Objective function
-        gradient = gradient_fn,               # Gradient of the objective
-        constraints = constraints_fn,         # Constraints function
-        jacobian = jacobian_fn,               # Jacobian of the constraints
-        eqcon = [1],                          # Equality constraint index
-        ineqcon = Int[],                         # No inequality constraints
-        solver_settings = SEQUOIA_Settings(:QPM, :LBFGS, false, 1e-6, 1000, 300),
+# Expected Output:
+    QPM solve completed with time: X seconds. #X≈3.67*10^-4 on my machine
+    Final solution: [1.9999609382629246, 1.874931699143694e-21]
+"""
+function example_qpm_solve_sequoia()
+    # Define a SEQUOIA problem
+    problem = SEQUOIA_pb(
+        3;
+        x0 = [1.0, 2.0, 3.0],
+        constraints = x -> [x[1] + x[2] - 5, x[3] - 0.5],
+        eqcon = [1],
+        ineqcon = [2],
+        jacobian = x -> [1.0 1.0 0.0; 0.0 0.0 1.0],
+        objective = x -> sum(x.^2),
+        gradient = x -> 2 .* x,
+        solver_settings = SEQUOIA_Settings(:QPM, :LBFGS, false, 10^-8, 50, 10.0, 10^-6;
+            solver_params = [1.0, 2.0, 10.0, 0],  # Penalty initialization and multiplier
+            cost_tolerance = 1e-6,
+            store_trace = true
+        )
     )
 
-    # Solve the problem using QPM
-    solve!(pb)
+    # Solver settings and options
+    inner_solver = Optim.LBFGS()
+    options = Optim.Options(iterations = 100, g_tol = 1e-6, store_trace=true, extended_trace=true)
 
-    # Display the results
-    println("Solution History:")
-    for step in pb.solution_history.iterates
-        println("Iteration: ", step.outer_iteration_number)
-        println("Solution: ", step.x)
-        println("Objective Value: ", step.fval)
-        println("Constraint Violation: ", step.convergence_metric)
-    end
-#end
+    # Initialize variables
+    time = 0.0
+    x = problem.x0
+    previous_fval = problem.objective(x)
+    iteration = 1
+    inner_iterations = 0
 
-# Call the example
-#example_simple_equality()
+    # Solve the QPM problem
+    time, x, previous_fval, iteration, inner_iterations = qpm_solve!(
+        problem,
+        inner_solver,
+        options,
+        time,
+        x,
+        previous_fval,
+        iteration,
+        inner_iterations
+    )
+
+    println("QPM solve completed with time: $time seconds.")
+    println("Final solution: $x")
+end
+
+# Example 2: QPM solve for a CUTEst problem
+"""
+This example demonstrates how to use `qpm_solve!` for a `CUTEstModel` problem.
+
+# Expected Output:
+    QPM solve completed with time: X seconds. # X≈5.25*10^-4 on my machine
+    Final solution: [1.9999609382629246, 1.874931699143694e-21]
+"""
+function example_qpm_solve_cutest()
+    # Initialize a CUTEst problem
+    problem = CUTEstModel("HS21")  # Example with constraints
+    x = problem.meta.x0
+
+    # Convert CUTEst problem to SEQUOIA
+    sequioa_problem = cutest_to_sequoia(problem)
+    sequioa_problem.solver_settings = SEQUOIA_Settings(:QPM, :LBFGS, false, 10^-8, 50, 10.0, 10^-6;
+    solver_params = [1.0, 2.0, 10.0, 0],  # Penalty initialization and multiplier
+    cost_tolerance = 1e-6,
+    store_trace = true
+    )
+
+    # Solver settings and options
+    inner_solver = Optim.LBFGS()
+    options = Optim.Options(iterations = 100, g_tol = 1e-6, store_trace=true, extended_trace=true)
+
+    # Initialize variables
+    time = 0.0
+    previous_fval = obj(problem, x)
+    iteration = 1
+    inner_iterations = 0
+
+    # Solve the QPM problem
+    time, x, previous_fval, iteration, inner_iterations = qpm_solve!(
+        sequioa_problem,
+        inner_solver,
+        options,
+        time,
+        x,
+        previous_fval,
+        iteration,
+        inner_iterations
+    )
+
+    println("QPM solve completed with time: $time seconds.")
+    println("Final solution: $x")
+
+    finalize(problem)  # Finalize CUTEst environment
+end
+
+# Run examples
+example_qpm_solve_sequoia()
+example_qpm_solve_cutest()

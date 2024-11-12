@@ -1,42 +1,124 @@
-using Optim, Sequoia
-using LinearAlgebra
+using Sequoia
+using Optim
+using CUTEst
+using NLPModels
 
-# Example 1: Minimizing a quadratic function with an equality constraint
-#function example_simple_equality()
-    # Objective: Minimize f(x) = (x1 - 2)^2 + (x2 - 3)^2
-    objective_fn = x -> (x[1] - 10.0)^2 + (x[2] - 2.0)^2
+# Example 1: Solve a SEQUOIA problem using `sequoia_solve!`
+"""
+This example demonstrates how to use `sequoia_solve!` for a `SEQUOIA_pb` problem.
 
-    # Constraint: x1 + x2 - 5 = 0
-    constraints_fn = x -> [x[1] + x[2] - 5.0]
-
-    # Gradient of the objective
-    gradient_fn = x -> [2.0 * (x[1] - 10.0), 2.0 * (x[2] - 2.0)]
-
-    # Jacobian of the constraint
-    jacobian_fn = x -> [1.0 1.0]
-
-    # Initialize SEQUOIA_pb problem
-    pb = SEQUOIA_pb(
-        2,
-        x0 = [0.0, 0.0],                     # Initial guess
-        is_minimization = true,               # Minimization problem
-        objective = objective_fn,             # Objective function
-        gradient = gradient_fn,               # Gradient of the objective
-        constraints = constraints_fn,         # Constraints function
-        jacobian = jacobian_fn,               # Jacobian of the constraints
-        eqcon = [1],                          # Equality constraint index
-        ineqcon = Int[],                         # No inequality constraints
-        solver_settings = SEQUOIA_Settings(:SEQUOIA, :LBFGS, false, 1e-6, 1000, 300),
+# Expected Output:
+    SEQUOIA solve completed with time: X seconds. # X≈5.5*10^-3
+    Final solution: [0.9965454393954011, 1.0033281093371909, 0.003105816383675714]
+"""
+function example_sequoia_solve()
+    # Define a SEQUOIA problem
+    problem = SEQUOIA_pb(
+        3;
+        x0 = [1.0, 2.0, 3.0],
+        constraints = x -> [x[1] + x[2] - 2, x[3] - 0.5],
+        eqcon = [1],
+        ineqcon = [2],
+        jacobian = x -> [1.0 1.0 0.0; 0.0 0.0 1.0],
+        objective = x -> sum(x.^2),
+        gradient = x -> 2 .* x,
+        solver_settings = SEQUOIA_Settings(
+            :SEQUOIA, 
+            :LBFGS, 
+            false, 
+            1e-8, 
+            100, 
+            1.0, 
+            1e-8; 
+            solver_params = [1.0, 2.0, 0.6], 
+            cost_tolerance = 1e-8, 
+            store_trace = true
+        )
     )
 
-    # Solve the problem using QPM
-    solve!(pb)
+    # Solver settings and options
+    inner_solver = Optim.LBFGS()
+    options = Optim.Options(iterations = 100, g_tol = 1e-6, store_trace=true, extended_trace=true)
 
-    # Display the results
-    println("Solution History:")
-    for step in pb.solution_history.iterates
-        println("Iteration: ", step.outer_iteration_number)
-        println("Solution: ", step.x)
-        println("Objective Value: ", step.fval)
-        println("Constraint Violation: ", step.convergence_metric)
-    end
+    # Initialize variables
+    time = 0.0
+    x = problem.x0
+    tk = problem.objective(x)
+    iteration = 1
+    inner_iterations = 0
+
+    # Solve the SEQUOIA problem
+    time, x, tk, iteration, inner_iterations = sequoia_solve!(
+        problem,
+        inner_solver,
+        options,
+        time,
+        x,
+        tk,
+        iteration,
+        inner_iterations
+    )
+
+    println("SEQUOIA solve completed with time: $time seconds.")
+    println("Final solution: $x")
+end
+
+# Example 2: Solve a CUTEst problem using `sequoia_solve!`
+"""
+This example demonstrates how to use `sequoia_solve!` for a `CUTEstModel` problem.
+
+# Expected Output:
+    SEQUOIA solve completed with time: X seconds. # X≈4.5*10^-3
+    Final solution: [1.9999951469562867, 0.002526617013478525]
+"""
+function example_cutest_sequoia_solve()
+    # Initialize a CUTEst problem
+    problem = CUTEstModel("HS21")  # Example with constraints
+    x = problem.meta.x0
+
+    # Convert CUTEst problem to SEQUOIA
+    sequoia_problem = cutest_to_sequoia(problem)
+    sequoia_problem.solver_settings = SEQUOIA_Settings(
+        :SEQUOIA, 
+        :LBFGS, 
+        false, 
+        1e-8, 
+        100, 
+        1.0, 
+        1e-8; 
+        solver_params = [1.0, 2.0, 0.6], 
+        cost_tolerance = 1e-8, 
+        store_trace = true
+    )
+
+    # Solver settings and options
+    inner_solver = Optim.LBFGS()
+    options = Optim.Options(iterations = 100, g_tol = 1e-6, store_trace=true, extended_trace=true)
+
+    # Initialize variables
+    time = 0.0
+    tk = obj(problem, x)
+    iteration = 1
+    inner_iterations = 0
+
+    # Solve the SEQUOIA problem
+    time, x, tk, iteration, inner_iterations = sequoia_solve!(
+        sequoia_problem,
+        inner_solver,
+        options,
+        time,
+        x,
+        tk,
+        iteration,
+        inner_iterations
+    )
+
+    println("SEQUOIA solve completed with time: $time seconds.")
+    println("Final solution: $x")
+
+    finalize(problem)  # Finalize CUTEst environment
+end
+
+# Run Examples
+example_sequoia_solve()
+example_cutest_sequoia_solve()

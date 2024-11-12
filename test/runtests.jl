@@ -14,10 +14,10 @@ include("test_interfaces/cutest_interface_testing.jl");#
 #include("test_interfaces/solve_testing.jl");
 
 include("test_algorithms/sequoia_feasibility_testing.jl");
-#include("test_algorithms/qpm_testing.jl");
+include("test_algorithms/qpm_testing.jl");
 #include("test_algorithms/auglag_testing.jl");
 #include("test_algorithms/ipm_testing.jl");
-#include("test_algorithms/sequoia_testing.jl");
+include("test_algorithms/sequoia_testing.jl");
 #
 include("test_residuals/cutest_constraints_testing.jl")
 include("test_residuals/feasibility_residuals_testing.jl")

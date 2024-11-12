@@ -617,7 +617,7 @@ function update_lag_mult!(x, μ, λ, problem::CUTEstModel)
 end
 
 =#
-
+#=
 function ipm_obj(x_a, μ, problem::SEQUOIA_pb)
     x=x_a[1:problem.nvar];
     iq=length(problem.ineqcon);
@@ -664,6 +664,7 @@ function ipm_grad!(g, x_a, μ, problem::SEQUOIA_pb)
     g .= ForwardDiff.gradient(z -> ipm_obj(z, μ, problem), x_a)
 
 end
+=#
 #=
 function res(x,problem::CUTEstModel)
     
@@ -715,7 +716,7 @@ function res(x,problem::CUTEstModel)
     return violation
 end
 =#
-
+#=
 function r_slack(x,s,problem::CUTEstModel)
     cons=res(x,problem);
     sum=0.0;
@@ -887,7 +888,7 @@ function ipm_grad!(g, x_a, μ, problem::CUTEstModel)
 
 
 end
-
+=#
 #=
 function auglag_obj(x, μ, λ, problem::CUTEstModel)
     # Compute residuals
