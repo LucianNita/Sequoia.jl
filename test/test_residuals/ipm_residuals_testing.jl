@@ -20,11 +20,11 @@ using LinearAlgebra
         )
 
         μ = 0.1  # Barrier parameter
-        x_a = [problem.x0; zeros(length(problem.ineqcon) + length(problem.eqcon)); 0.1 * ones(length(problem.ineqcon))]
+        x_a = [problem.x0; zeros(length(problem.ineqcon) + length(problem.eqcon))]
 
         # Compute the IPM objective
         obj_value = ipm_obj(x_a, μ, problem)
-        @test isapprox(obj_value, 66.3101; atol=1e-4)
+        @test isapprox(obj_value, 66.26; atol=1e-4)
     end
 
     # Test 2: IPM Gradient for SEQUOIA problem
@@ -42,13 +42,13 @@ using LinearAlgebra
         )
 
         μ = 0.1  # Barrier parameter
-        x_a = [problem.x0; zeros(length(problem.ineqcon) + length(problem.eqcon)); 0.1 * ones(length(problem.ineqcon))]
+        x_a = [problem.x0; zeros(length(problem.ineqcon) + length(problem.eqcon))]
         grad_storage = zeros(length(x_a))
 
         # Compute the IPM gradient
         ipm_grad!(grad_storage, x_a, μ, problem)
 
-        @test isapprox(grad_storage, [4.0, 12.0, 29.02, 12.0, 11.996, 1.004]; atol=1e-3)
+        @test isapprox(grad_storage, [4.0, 12.0, 29.0, 12.0, 11.5]; atol=1e-3)
     end
 
     # Test 3: IPM Objective for CUTEst problem
@@ -61,12 +61,12 @@ using LinearAlgebra
         nvar = problem.meta.nvar
         eq = length(problem.meta.jfix) + length(problem.meta.ifix)
         iq = length(problem.meta.jlow) + length(problem.meta.ilow) + length(problem.meta.jupp) + length(problem.meta.iupp) + 2 * (length(problem.meta.jrng) + length(problem.meta.irng))
-        x_a = [x; zeros(eq + iq); 0.1 * ones(iq)]
+        x_a = [x; zeros(eq + iq)]
 
         # Compute the IPM objective
         obj_value = ipm_obj(x_a, μ, problem)
 
-        @test isapprox(obj_value, 7974.4709; atol=1e-4)
+        @test isapprox(obj_value, 374.0504; atol=1e-4)
 
         finalize(problem)  # Finalize CUTEst environment
     end
@@ -81,13 +81,13 @@ using LinearAlgebra
         nvar = problem.meta.nvar
         eq = length(problem.meta.jfix) + length(problem.meta.ifix)
         iq = length(problem.meta.jlow) + length(problem.meta.ilow) + length(problem.meta.jupp) + length(problem.meta.iupp) + 2 * (length(problem.meta.jrng) + length(problem.meta.irng))
-        x_a = [x; zeros(eq + iq); 0.1 * ones(iq)]
+        x_a = [x; zeros(eq + iq)]
         grad_storage = zeros(length(x_a))
 
         # Compute the IPM gradient
         ipm_grad!(grad_storage, x_a, μ, problem)
 
-        @test isapprox(grad_storage, [-488.2008000000001, 26.019999999999996, -3.604, 0.036, 3.996, -0.044000000000000004, -4.004, 7.604000000000001, 1.204, -19.596000000000004, -20.396, -20.396]; atol=1e-3)
+        @test isapprox(grad_storage, [-386.0008, 30.0, -7.4, -0.56, 13.8, 10.160000000000002, 6.200000000000001]; atol=1e-3)
 
         finalize(problem)  # Finalize CUTEst environment
     end
