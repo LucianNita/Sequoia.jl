@@ -43,8 +43,7 @@ function ipm_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previou
         pb = problem.cutest_nlp;
         con = res(x,pb)
     end
-    
-
+    fval=previous_fval
     while iteration < problem.solver_settings.max_iter_outer && time < problem.solver_settings.max_time_outer
 
         obj_aug_fn = x -> ipm_obj(x, penalty_param, pb)
@@ -95,7 +94,7 @@ function ipm_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previou
     else
         solver_status = :unknown
     end
-    step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), solver_status, time, inner_iterations, result.minimizer[1:problem.nvar], fval, problem.gradient(x[1:problem.nvar]), problem.constraints(result.minimizer[1:problem.nvar]), vcat(penalty_param,λ))
+    step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), solver_status, time, inner_iterations, x[1:problem.nvar], fval, problem.gradient(x[1:problem.nvar]), problem.constraints(x[1:problem.nvar]), vcat(penalty_param,λ))
     add_iterate!(problem.solution_history, step)  # Add step to history
 
     return time, x, previous_fval, iteration, inner_iterations
