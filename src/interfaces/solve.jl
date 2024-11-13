@@ -2,7 +2,9 @@ import Optim
 using LinearAlgebra
 
 export solve!
-
+"""
+This is a function
+"""
 function solve!(problem::SEQUOIA_pb)
     # Inner solver from SEQUOIA_Settings
     inner_solver = choose_inner_solver(problem.solver_settings.inner_solver)
