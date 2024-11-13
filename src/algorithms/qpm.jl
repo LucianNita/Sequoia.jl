@@ -52,23 +52,22 @@ function qpm_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previou
         fval = result.minimum  # Objective function value
         time += result.time_run
         inner_iterations += result.iterations
+        
+        if problem.solver_settings.store_trace
+            step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), :unknown, result.time_run, result.iterations, x, fval, problem.gradient(x), problem.constraints(x), [penalty_param],Optim.x_trace(result) )
+            add_iterate!(problem.solution_history, step)  # Add step to history
+        end
 
         conv = r0(x, pb) <= problem.solver_settings.resid_tolerance && Optim.converged(result)
         if !isnothing(problem.solver_settings.cost_tolerance) # Check for convergence using improved criteria
             conv = conv && abs(fval - previous_fval) < problem.solver_settings.cost_tolerance
         end
         if conv
-            problem.solver_settings.store_trace ? x_tr=Optim.x_trace(result) : x_tr=nothing
-            step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), :first_order, result.time_run, result.iterations, x, fval, problem.gradient(x), problem.constraints(x), [penalty_param], x_tr)
+            step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), :first_order, time, inner_iterations, x, fval, problem.gradient(x), problem.constraints(x), [penalty_param])
             add_iterate!(problem.solution_history, step)  # Add step to history
 
             previous_fval=fval;
             return time, x, previous_fval, iteration, inner_iterations
-        end
-
-        if problem.solver_settings.store_trace
-            step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), :unknown, result.time_run, result.iterations, x, fval, problem.gradient(x), problem.constraints(x), [penalty_param],Optim.x_trace(result) )
-            add_iterate!(problem.solution_history, step)  # Add step to history
         end
 
         # Update previous function value for the next iteration
@@ -92,12 +91,8 @@ function qpm_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previou
     else
         solver_status = :unknown
     end
-    if problem.solver_settings.store_trace
-        problem.solution_history.iterates[end].solver_status=solver_status;
-    else
-        step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), solver_status, time, inner_iterations, x, fval, problem.gradient(x), problem.constraints(x), [penalty_param])
-        add_iterate!(problem.solution_history, step)  # Add step to history    
-    end
-    
+    step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), solver_status, time, inner_iterations, x, fval, problem.gradient(x), problem.constraints(x), [penalty_param])
+    add_iterate!(problem.solution_history, step)  # Add step to history    
+
     return time, x, previous_fval, iteration, inner_iterations
 end

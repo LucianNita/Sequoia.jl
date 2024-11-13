@@ -77,7 +77,7 @@ Creates an instance of `SEQUOIA_Solution_step` with all relevant information abo
 # Returns
 A `SEQUOIA_Solution_step` instance.
 """
-mutable struct SEQUOIA_Solution_step
+struct SEQUOIA_Solution_step
     outer_iteration_number::Int                                     # The current outer iteration number
     convergence_metric::Float64                                     # Convergence metric (e.g., feasibility, gradient norm, or optimality gap)
     solver_status::Symbol                                           # Solver status as obtained from the inner solver

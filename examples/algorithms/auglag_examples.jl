@@ -1,87 +1,121 @@
-#= Example usage: (same as in QPM)
+using Sequoia, Optim, CUTEst, NLPModels
 
-# Objective function: minimize f(x) = x₁² + x₂²
-obj_fn = x -> x[1]^2 + x[2]^2
+"""
+Example demonstrating `alm_solve!` for a `SEQUOIA_pb` problem.
 
-# Gradient of the objective function
-grad_fn = x -> [2*x[1], 2*x[2]]
-
-# Constraint function g(x) = [x₁ + x₂, x₁]
-cons_fn = x -> [x[1] + x[2], x[1]]
-
-# Jacobian of the constraint function
-cons_jac_fn = x -> [1.0 1.0; 1.0 0.0]
-
-# Lower and upper bounds for constraints
-lb = [1.0, -Inf]
-ub = [1.0, 0.3]
-
-# Indices for equality and inequality constraints
-eq_indices = [1]
-ineq_indices = [2]
-
-# Initial guess
-x0 = [0.25, 0.75]
-
-# Solve using Augmented Lagrangian Method with Optim.jl
-inner_solver = Optim.LBFGS()
-
-println("Using fixed penalty update strategy:")
-solution_history_fixed = alm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver, penalty_init=1.0, penalty_mult=10.0, tol=1e-6, max_iter=1000, update_fn=fixed_penalty_update)
-
-println("Solution history for fixed penalty: ", solution_history_fixed)
-
-println("\nUsing adaptive penalty update strategy:")
-solution_history_adaptive = alm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver, penalty_init=1.0, penalty_mult=10.0, tol=1e-6, max_iter=1000, damping_factor=10.0, update_fn=adaptive_penalty_update)
-
-println("Solution history for adaptive penalty: ", solution_history_adaptive)
-
-# Example of warm starting with Lagrange multipliers
-println("\nUsing warm start for Lagrange multipliers:")
-solution_history_warm = alm_solve(obj_fn, grad_fn, cons_fn, cons_jac_fn, lb, ub, eq_indices, ineq_indices, x0, inner_solver, penalty_init=1.0, penalty_mult=10.0, tol=1e-6, max_iter=1000, update_fn=fixed_penalty_update, λ_init=final_lambda_fixed)
-
-println("Solution history for warm start: ", solution_history_warm)
-=#
-
-using Optim, Sequoia
-using LinearAlgebra
-
-# Example 1: Minimizing a quadratic function with an equality constraint
-#function example_simple_equality()
-    # Objective: Minimize f(x) = (x1 - 2)^2 + (x2 - 3)^2
-    objective_fn = x -> (x[1] - 2.0)^2 + (x[2] - 3.0)^2
-
-    # Constraint: x1 + x2 - 5 = 0
-    constraints_fn = x -> [x[1] - x[2], x[1] + x[2] - 4.0]
-
-    # Gradient of the objective
-    gradient_fn = x -> [2.0 * (x[1] - 2.0), 2.0 * (x[2] - 3.0)]
-
-    # Jacobian of the constraint
-    jacobian_fn = x -> [1.0 -1.0; 1.0 1.0] 
-
-    # Initialize SEQUOIA_pb problem
-    pb = SEQUOIA_pb(
-        2,
-        x0 = [0.0, 0.0],                     # Initial guess
-        is_minimization = true,               # Minimization problem
-        objective = objective_fn,             # Objective function
-        gradient = gradient_fn,               # Gradient of the objective
-        constraints = constraints_fn,         # Constraints function
-        jacobian = jacobian_fn,               # Jacobian of the constraints
-        eqcon = [1],                          # Equality constraint index
-        ineqcon = [2],                         # No inequality constraints
-        solver_settings = SEQUOIA_Settings(:AugLag, :LBFGS, false, 1e-6, 1000, 300),
+Expected Output:
+    ALM Solve Completed
+    Final Solution: [0.5000000000000001, 1.499976984866648]
+    Objective Value: 2.500950951042217
+"""
+function example_alm_solve_sequoia()
+    # Define a SEQUOIA problem
+    problem = SEQUOIA_pb(
+        2;
+        x0 = [1.0, 2.0],
+        constraints = x -> [x[1] + x[2] - 2, x[1] - 0.5],
+        eqcon = [1],
+        ineqcon = [2],
+        jacobian = x -> [1.0 1.0; 1.0 0.0],
+        objective = x -> sum(x.^2),
+        gradient = x -> 2 .* x,
+        solver_settings = SEQUOIA_Settings(
+            :AugLag,
+            :LBFGS,
+            false,
+            1e-8,
+            100,
+            10.0,
+            1e-6;
+            solver_params = [1.0, 2.0, 0.1, 0, 0.0, 0.0],
+            store_trace = true
+        )
     )
 
-    # Solve the problem using QPM
-    solve!(pb)
+    # Solver settings
+    inner_solver = Optim.LBFGS()
+    options = Optim.Options(iterations = 100, g_tol = 1e-6, store_trace=true, extended_trace=true)
 
-    # Display the results
-    println("Solution History:")
-    for step in pb.solution_history.iterates
-        println("Iteration: ", step.outer_iteration_number)
-        println("Solution: ", step.x)
-        println("Objective Value: ", step.fval)
-        println("Constraint Violation: ", step.convergence_metric)
-    end
+    # Initialize variables
+    time = 0.0
+    x = problem.x0
+    previous_fval = problem.objective(x)
+    iteration = 1
+    inner_iterations = 0
+
+    # Solve the problem
+    time, x, previous_fval, iteration, inner_iterations = alm_solve!(
+        problem,
+        inner_solver,
+        options,
+        time,
+        x,
+        previous_fval,
+        iteration,
+        inner_iterations
+    )
+
+    println("ALM Solve Completed")
+    println("Final Solution: $x")
+    println("Objective Value: $previous_fval")
+end
+
+"""
+Example demonstrating `alm_solve!` for a `CUTEstModel` problem.
+
+Expected Output:
+    ALM Solve Completed
+    Final Solution: [1.9998629898908966, -4.854728251886606e-22]
+    Objective Value: -99.96000274020219
+"""
+function example_alm_solve_cutest()
+    # Initialize a CUTEst problem
+    problem = CUTEstModel("HS21")  # Example with constraints
+    x = problem.meta.x0
+
+    # Convert CUTEst problem to SEQUOIA
+    sequoia_problem = cutest_to_sequoia(problem)
+    sequoia_problem.solver_settings = SEQUOIA_Settings(
+        :AugLag,
+        :LBFGS,
+        false,
+        1e-8,
+        100,
+        10.0,
+        1e-6;
+        solver_params = [1.0, 1.5, 0.1, 0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        store_trace = true
+    )
+
+    # Solver settings
+    inner_solver = Optim.LBFGS()
+    options = Optim.Options(iterations = 100, g_tol = 1e-6, store_trace=true, extended_trace=true)
+
+    # Initialize variables
+    time = 0.0
+    previous_fval = obj(problem, x)
+    iteration = 1
+    inner_iterations = 0
+
+    # Solve the problem
+    time, x, previous_fval, iteration, inner_iterations = alm_solve!(
+        sequoia_problem,
+        inner_solver,
+        options,
+        time,
+        x,
+        previous_fval,
+        iteration,
+        inner_iterations
+    )
+
+    println("ALM Solve Completed")
+    println("Final Solution: $x")
+    println("Objective Value: $previous_fval")
+
+    # Finalize CUTEst environment
+    finalize(problem)
+end
+
+example_alm_solve_sequoia()
+example_alm_solve_cutest()

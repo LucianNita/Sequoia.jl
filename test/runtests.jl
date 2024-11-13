@@ -15,13 +15,13 @@ include("test_interfaces/cutest_interface_testing.jl");#
 
 include("test_algorithms/sequoia_feasibility_testing.jl");
 include("test_algorithms/qpm_testing.jl");
-#include("test_algorithms/auglag_testing.jl");
+include("test_algorithms/auglag_testing.jl");
 include("test_algorithms/ipm_testing.jl");
 include("test_algorithms/sequoia_testing.jl");
-#
+
 include("test_residuals/cutest_constraints_testing.jl")
 include("test_residuals/feasibility_residuals_testing.jl")
 include("test_residuals/qpm_residuals_testing.jl")
 include("test_residuals/alm_residuals_testing.jl")
 include("test_residuals/ipm_residuals_testing.jl")
-include("test_residuals/sequoia_residuals_testing.jl")#
+include("test_residuals/sequoia_residuals_testing.jl")

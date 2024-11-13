@@ -60,19 +60,18 @@ function ipm_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previou
         time+= result.time_run  # Computation time
         inner_iterations += result.iterations
         
+        if problem.solver_settings.store_trace
+            step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), :unknown, result.time_run, result.iterations, x, fval, problem.gradient(x), problem.constraints(x), vcat(penalty_param,λ),Optim.x_trace(result) )
+            add_iterate!(problem.solution_history, step)  # Add step to history
+        end
+
         conv = Optim.converged(result) && r0(x,pb) ≤ problem.solver_settings.resid_tolerance && abs(fval - previous_fval) < problem.solver_settings.cost_tolerance 
         if conv
-            problem.solver_settings.store_trace ? x_tr=Optim.x_trace(result) : x_tr=nothing
-            step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), :first_order, result.time_run, result.iterations, x, fval, problem.gradient(x), problem.constraints(x),  vcat(penalty_param,λ), x_tr)
+            step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), :first_order, time, inner_iterations, x, fval, problem.gradient(x), problem.constraints(x),  vcat(penalty_param,λ))
             add_iterate!(problem.solution_history, step)  # Add step to history
 
             previous_fval=fval;
             return time, x, previous_fval, iteration, inner_iterations
-        end
-
-        if problem.solver_settings.store_trace
-            step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), :unknown, result.time_run, result.iterations, x, fval, problem.gradient(x), problem.constraints(x), vcat(penalty_param,λ),Optim.x_trace(result) )
-            add_iterate!(problem.solution_history, step)  # Add step to history
         end
 
         # Update previous function value for the next iteration
@@ -96,12 +95,8 @@ function ipm_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, previou
     else
         solver_status = :unknown
     end
-    if problem.solver_settings.store_trace
-        problem.solution_history.iterates[end].solver_status=solver_status;
-    else
-        step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), solver_status, time, inner_iterations, result.minimizer[1:problem.nvar], fval, problem.gradient(x[1:problem.nvar]), problem.constraints(result.minimizer[1:problem.nvar]), vcat(penalty_param,λ))
-        add_iterate!(problem.solution_history, step)  # Add step to history
-    end    
+    step = SEQUOIA_Solution_step(iteration, abs(fval - previous_fval), solver_status, time, inner_iterations, result.minimizer[1:problem.nvar], fval, problem.gradient(x[1:problem.nvar]), problem.constraints(result.minimizer[1:problem.nvar]), vcat(penalty_param,λ))
+    add_iterate!(problem.solution_history, step)  # Add step to history
 
     return time, x, previous_fval, iteration, inner_iterations
 end

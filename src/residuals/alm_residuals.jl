@@ -1,3 +1,4 @@
+export auglag_obj,auglag_grad!,update_lag_mult!
 """
     auglag_obj(x, μ, λ, problem::SEQUOIA_pb)
 
@@ -116,13 +117,10 @@ function auglag_obj(x, μ, λ, problem::CUTEstModel)
     con = res(x, problem)
     # Determine residual partitions
     total_eq_con = length(problem.meta.jfix) + length(problem.meta.ifix)
+    con[total_eq_con+1:end] = max.(0,con[total_eq_con+1:end]); 
 
     # Compute the augmented Lagrangian objective
-    obj_val = obj(problem, x)
-    penalty_term = 0.5 * μ * (sum(con[1:total_eq_con].^2) + sum(max.(0, con[total_eq_con+1:end]).^2))
-    lagrange_term = λ' * con
-
-    return obj_val + penalty_term + lagrange_term
+    return obj(problem, x) +  μ*r0(x,problem) + con' * λ
 end
 
 """

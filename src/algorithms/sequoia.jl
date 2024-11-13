@@ -88,29 +88,26 @@ function sequoia_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, tk,
             dk*=beta;
         end
 
+        if problem.solver_settings.store_trace
+            step = SEQUOIA_Solution_step(iteration, dk, :unknown, resultl.time_run+resultu.time_run, resultl.iterations+resultu.iterations, x, rk, problem.gradient(x), problem.constraints(x), [tk], vcat(Optim.x_trace(resultl),Optim.x_trace(resultu)))
+            add_iterate!(problem.solution_history, step)  # Add step to history
+        end
+
         if dk<problem.solver_settings.cost_tolerance && rk <= problem.solver_settings.resid_tolerance         # Convergence check
-            problem.solver_settings.store_trace && (x_tr=vcat(Optim.x_trace(resultl),Optim.x_trace(resultu)))
-            step = SEQUOIA_Solution_step(iteration, dk, :first_order, time, inner_iterations, x, rk, problem.gradient(x), problem.constraints(x), [tk], x_tr)
+            step = SEQUOIA_Solution_step(iteration, dk, :first_order, time, inner_iterations, x, rk, problem.gradient(x), problem.constraints(x), [tk])
             add_iterate!(problem.solution_history, step)  # Add step to history#
 
             return time, x, tu, iteration, inner_iterations
         elseif dk<10^(-16) && rk > problem.solver_settings.resid_tolerance #problem.solver_settings.cost_tolerance
-            problem.solver_settings.store_trace && (x_tr=vcat(Optim.x_trace(resultl),Optim.x_trace(resultu)))
-            step = SEQUOIA_Solution_step(iteration, dk, :small_step, time, inner_iterations, x, rk, problem.gradient(x), problem.constraints(x), [tk], x_tr)
+            step = SEQUOIA_Solution_step(iteration, dk, :small_step, time, inner_iterations, x, rk, problem.gradient(x), problem.constraints(x), [tk])
             add_iterate!(problem.solution_history, step)  # Add step to history#
 
             return time, x, tu, iteration, inner_iterations
         elseif tk<problem.solver_settings.cost_min
-            problem.solver_settings.store_trace && (x_tr=vcat(Optim.x_trace(resultl),Optim.x_trace(resultu)))
-            step = SEQUOIA_Solution_step(iteration, dk, :unbounded, time, inner_iterations, x, rk, problem.gradient(x), problem.constraints(x), [tk], x_tr)
+            step = SEQUOIA_Solution_step(iteration, dk, :unbounded, time, inner_iterations, x, rk, problem.gradient(x), problem.constraints(x), [tk])
             add_iterate!(problem.solution_history, step)  # Add step to history#
 
             return time, x, tu, iteration, inner_iterations
-        end
-
-        if problem.solver_settings.store_trace
-            step = SEQUOIA_Solution_step(iteration, dk, :unknown, resultl.time_run+resultu.time_run, resultl.iterations+resultu.iterations, x, rk, problem.gradient(x), problem.constraints(x), [tk], vcat(Optim.x_trace(resultl),Optim.x_trace(resultu)))
-            add_iterate!(problem.solution_history, step)  # Add step to history
         end
 
         if rk <= problem.solver_settings.resid_tolerance
@@ -131,12 +128,8 @@ function sequoia_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, tk,
     else
         solver_status = :unknown
     end
-    if problem.solver_settings.store_trace
-        problem.solution_history.iterates[end].solver_status=solver_status;
-    else
-        step = SEQUOIA_Solution_step(iteration, dk, solver_status, time, inner_iterations, x, rk, problem.gradient(x), problem.constraints(x), [tk])
-        add_iterate!(problem.solution_history, step)  # Add step to history
-    end
+    step = SEQUOIA_Solution_step(iteration, dk, solver_status, time, inner_iterations, x, rk, problem.gradient(x), problem.constraints(x), [tk])
+    add_iterate!(problem.solution_history, step)  # Add step to history
 
     return time, x, tu, iteration, inner_iterations
 end

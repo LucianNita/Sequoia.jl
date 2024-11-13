@@ -49,7 +49,7 @@ using NLPModels
         )
         @test isapprox(x, [2.5,2.5,0.0], atol=1e-4)
         @test problem.solution_history.iterates[end].solver_status == :first_order
-        @test length(problem.solution_history.iterates) == iteration
+        @test length(problem.solution_history.iterates) == iteration+1
         @test isapprox(previous_fval, 12.5, atol=1e-4)
     end
 
@@ -91,7 +91,7 @@ using NLPModels
 
         @test isapprox(x, [2.0,0.0], atol=1e-4)
         @test sequoia_problem.solution_history.iterates[end].solver_status == :first_order
-        @test length(sequoia_problem.solution_history.iterates) == iteration
+        @test length(sequoia_problem.solution_history.iterates) == iteration+1
         @test isapprox(previous_fval, -99.96, atol=1e-4)
 
         finalize(problem)  # Finalize CUTEst environment
