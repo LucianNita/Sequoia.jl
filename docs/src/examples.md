@@ -30,6 +30,7 @@ settings_full = SEQUOIA_Settings(
 )
 
 println(settings_full)
+```
 #=
 Output:
 SEQUOIA_Settings(:SEQUOIA, :LBFGS, false, 1.0e-8, 1000, 3600.0, :GradientNorm, 500, 300.0, true, 0.0001, -1.0e6, 1.0e-8, [1.0, 0.5])
