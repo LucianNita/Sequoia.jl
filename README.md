@@ -99,6 +99,7 @@ println("Objective value: ", problem.objective(problem.solution_history.iterates
 ## API Reference 
 
 For a detailed API reference, visit the [documentation](https://luciannita.github.io/Sequoia.jl/dev/). 
+
 ---
 
 ## Contributing 
@@ -119,12 +120,12 @@ git commit -m "Add new feature"
 git push origin feature-branch
 ```
 5. Open a pull request.
-Before contributing, please review our contributing guidelines. (add link here)
+Before contributing, please review our contributing guidelines. (add link here once done)
 
 ---
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/LucianNita/Sequoia.jl/blob/main/LICENSE) file for details. (add link)
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/LucianNita/Sequoia.jl/blob/main/LICENSE) file for details.
 
 ---
