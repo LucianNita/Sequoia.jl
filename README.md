@@ -98,8 +98,7 @@ println("Objective value: ", problem.objective(problem.solution_history.iterates
 
 ## API Reference 
 
-For a detailed API reference, visit the documentation. (add link here)
-
+For a detailed API reference, visit the [documentation](https://luciannita.github.io/Sequoia.jl/dev/). 
 ---
 
 ## Contributing 
@@ -126,6 +125,6 @@ Before contributing, please review our contributing guidelines. (add link here)
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. (add link)
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/LucianNita/Sequoia.jl/blob/main/LICENSE) file for details. (add link)
 
 ---
