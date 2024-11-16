@@ -25,7 +25,7 @@ function r(x,tk,problem::CUTEstModel)
     cviol = r0(x,problem);
     obj_penalty = max(0.0, obj(problem, x)-tk);
 
-    return cviol + 0.5 * obj_penalty^2;
+    return cviol + 0.5 * obj_penalty^2; 
 end
 
 """
@@ -49,7 +49,7 @@ Compute the gradient of the penalty function r(x, t_k) for a `CUTEstModel` probl
 """
 function r_gradient!(grad_storage, x, tk, problem::CUTEstModel)
     r0_gradient!(grad_storage,x,problem);
-    grad_storage .= grad_storage .+ (grad(problem, x) .* max(0.0, obj(problem,x) - tk));
+    grad_storage .= grad_storage .+ (grad(problem, x) .* max(0.0, obj(problem,x) - tk));# (obj(problem,x)>=tk)
 end
 
 """
@@ -101,5 +101,5 @@ Compute the gradient of the penalty function r(x, t_k) for a `SEQUOIA_pb` proble
 """
 function r_gradient!(grad_storage, x, tk, problem::SEQUOIA_pb)
     r0_gradient!(grad_storage,x,problem);
-    grad_storage .= grad_storage .+ (problem.gradient(x) .* max(0.0, problem.objective(x) - tk));
+    grad_storage .= grad_storage .+ (problem.gradient(x) .* max(0.0, problem.objective(x) - tk)); ##(problem.objective(x)>=tk)
 end

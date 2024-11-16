@@ -113,7 +113,7 @@ function sequoia_solve!(problem::SEQUOIA_pb, inner_solver, options, time, x, tk,
         if rk <= problem.solver_settings.resid_tolerance
             tu=tk;
         else 
-            tu=tk+dk;
+            tu=tk+dk; #8*rk; #((problem.objective(x) - tk)*tk+8*rk) / (problem.objective(x) - tk)
         end
         tl=tk-dk;
 
