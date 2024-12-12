@@ -31,14 +31,16 @@ settings_full = SEQUOIA_Settings(
 
 println(settings_full)
 ```
-#=
 Output:
+```julia
 SEQUOIA_Settings(:SEQUOIA, :LBFGS, false, 1.0e-8, 1000, 3600.0, :GradientNorm, 500, 300.0, true, 0.0001, -1.0e6, 1.0e-8, [1.0, 0.5])
-Example 2: Using the Minimal Constructor
+```
+---
+
+## Example 2: Using the Minimal Constructor
 The minimal constructor lets you define only the required fields. Default values are applied to optional parameters such as convergence_criteria, cost_tolerance, and solver_params.
 
-julia
-Copy code
+```julia
 using Sequoia
 
 settings_min = SEQUOIA_Settings(
@@ -52,17 +54,15 @@ settings_min = SEQUOIA_Settings(
 )
 
 println(settings_min)
+```
 Output:
-
-vbnet
-Copy code
 SEQUOIA_Settings(:QPM, :Newton, true, 1.0e-6, 500, 1800.0, :GradientNorm, nothing, nothing, false, nothing, nothing, nothing, nothing)
-Example 3: Error Handling with Invalid Inputs
+
+## Example 3: Error Handling with Invalid Inputs
 When invalid inputs are provided, SEQUOIA_Settings raises descriptive errors to guide the user.
 
 Invalid Outer Method
-julia
-Copy code
+```julia
 using Sequoia
 
 try
@@ -77,11 +77,12 @@ try
 catch e
     println(e)  # Prints: "Invalid outer method: :InvalidMethod. Valid methods are: QPM, AugLag, IntPt, SEQUOIA."
 end
-Example 4: Custom Solver Parameters
+```
+
+## Example 4: Custom Solver Parameters
 Custom solver parameters can be passed to fine-tune optimization behavior. For example, you might want to specify step sizes or penalty parameters.
 
-julia
-Copy code
+```julia
 using Sequoia
 
 settings_with_params = SEQUOIA_Settings(
@@ -99,16 +100,14 @@ settings_with_params = SEQUOIA_Settings(
 )
 
 println(settings_with_params)
+```
 Output:
-
-ruby
-Copy code
 SEQUOIA_Settings(:AugLag, :GradientDescent, false, 1.0e-6, 800, 3000.0, :MaxIterations, 100, nothing, false, nothing, nothing, 1.0e-6, [0.01, 10.0])
-Example 5: Debugging an Optimization Problem
+
+## Example 5: Debugging an Optimization Problem
 Enable store_trace to record intermediate states of the optimization process for debugging:
 
-julia
-Copy code
+```julia
 using Sequoia
 
 settings_debug = SEQUOIA_Settings(
@@ -123,9 +122,6 @@ settings_debug = SEQUOIA_Settings(
 )
 
 println(settings_debug)
+```
 Output:
-
-vbnet
-Copy code
 SEQUOIA_Settings(:SEQUOIA, :LBFGS, false, 1.0e-6, 500, 3600.0, :GradientNorm, nothing, nothing, true, nothing, nothing, nothing, nothing)
-=#
