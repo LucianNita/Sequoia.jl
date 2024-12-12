@@ -56,7 +56,11 @@ settings_min = SEQUOIA_Settings(
 println(settings_min)
 ```
 Output:
+
+```julia
 SEQUOIA_Settings(:QPM, :Newton, true, 1.0e-6, 500, 1800.0, :GradientNorm, nothing, nothing, false, nothing, nothing, nothing, nothing)
+```
+---
 
 ## Example 3: Error Handling with Invalid Inputs
 When invalid inputs are provided, SEQUOIA_Settings raises descriptive errors to guide the user.
@@ -78,6 +82,12 @@ catch e
     println(e)  # Prints: "Invalid outer method: :InvalidMethod. Valid methods are: QPM, AugLag, IntPt, SEQUOIA."
 end
 ```
+Output:
+```julia 
+MethodError(SEQUOIA_Settings, (:InvalidMethod, :LBFGS, false, 1.0e-8, 1000, 3600.0), 0x0000000000007b29)
+```
+
+---
 
 ## Example 4: Custom Solver Parameters
 Custom solver parameters can be passed to fine-tune optimization behavior. For example, you might want to specify step sizes or penalty parameters.
@@ -102,7 +112,10 @@ settings_with_params = SEQUOIA_Settings(
 println(settings_with_params)
 ```
 Output:
+```julia
 SEQUOIA_Settings(:AugLag, :GradientDescent, false, 1.0e-6, 800, 3000.0, :MaxIterations, 100, nothing, false, nothing, nothing, 1.0e-6, [0.01, 10.0])
+```
+---
 
 ## Example 5: Debugging an Optimization Problem
 Enable store_trace to record intermediate states of the optimization process for debugging:
@@ -124,4 +137,6 @@ settings_debug = SEQUOIA_Settings(
 println(settings_debug)
 ```
 Output:
-SEQUOIA_Settings(:SEQUOIA, :LBFGS, false, 1.0e-6, 500, 3600.0, :GradientNorm, nothing, nothing, true, nothing, nothing, nothing, nothing)
+```julia
+SEQUOIA_Settings(:SEQUOIA, :LBFGS, false, 1.0e-6, 500, 3600.0, 1.0e-5, :GradientNorm, nothing, nothing, true, 0.0001, -1.0e6, nothing, nothing)
+```
