@@ -64,13 +64,9 @@ Here's an example of a simple constrained optimization problem:
 
 ### Problem:
 
-$
-\text{Minimize } f(x) = x_1^2 + x_2^2 \quad \text{subject to:}
-$
+$$\text{Minimize } f(x) = x_1^2 + x_2^2 \quad \text{subject to:}$$
 
-$$
-x_1 + x_2 - 2 = 0, \quad x_2 - 1 \geq 0, \quad x_1 \in [0, 2], \quad x_2 \in [0, 2]
-$$
+$$x_1 + x_2 - 2 = 0, \quad x_2 - 1 \geq 0, \quad x_1 \in [0, 2], \quad x_2 \in [0, 2]$$
 
 ### Code in Sequoia.jl:
 
