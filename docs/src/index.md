@@ -14,9 +14,9 @@ The package integrates seamlessly with **Optim.jl** for inner solvers and **CUTE
 ## **Key Features**
 
 - **Support for Constraints**:
-  - Equality constraints \( h(x) = 0 \)
-  - Inequality constraints \( g(x) \geq 0 \)
-  - Variable bounds \( l \leq x \leq u \)
+  - Equality constraints $$ h(x) = 0 $$
+  - Inequality constraints $$ g(x) \geq 0 $$
+  - Variable bounds $$ l \leq x \leq u $$
   
 - **Optimization Methods**:
   - **Quadratic Penalty Method (QPM)**: Smoothly handles constraints by adding penalty terms to the objective.
